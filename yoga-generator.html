@@ -1276,17 +1276,24 @@
 
         // Event Listeners - Intake Screen
         function attachIntakeListeners() {
+            console.log('🎛️ attachIntakeListeners called');
+            
             const durationGroup = document.getElementById('durationGroup');
             if (durationGroup) {
+                console.log('  ✅ durationGroup found, attaching listener');
                 durationGroup.addEventListener('click', (e) => {
+                    console.log('🔘 Duration button clicked:', e.target.textContent);
                     if (e.target.classList.contains('button-option')) {
                         document.querySelectorAll('#durationGroup .button-option').forEach(btn => 
                             btn.classList.remove('selected'));
                         e.target.classList.add('selected');
                         state.duration = parseInt(e.target.dataset.duration);
+                        console.log('⏱️ Duration set to:', state.duration);
                         updateGenerateBtn();
                     }
                 });
+            } else {
+                console.log('  ❌ durationGroup NOT found');
             }
 
             const focusGroup = document.getElementById('focusGroup');
@@ -1921,36 +1928,51 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
 
         // Initialize
         function initializeApp() {
+            console.log('🔧 Starting app initialization...');
             try {
+                console.log('📋 DOM state:', document.readyState);
+                
                 // Check if all key elements exist
                 const requiredElements = [
                     'durationGroup', 'focusGroup', 'musicGroup', 'generateBtn', 
                     'settingsBtn', 'apiKeyInput', 'saveKeyBtn', 'clearKeyBtn'
                 ];
                 
+                console.log('🔍 Checking required elements...');
                 for (const id of requiredElements) {
                     const el = document.getElementById(id);
-                    if (!el) {
-                        console.warn(`Missing element: ${id}`);
-                    }
+                    console.log(`  ${id}: ${el ? '✅ Found' : '❌ MISSING'}`);
                 }
                 
                 // Attach all event listeners
+                console.log('🎯 Attaching settings listeners...');
                 attachSettingsListeners();
+                console.log('✅ Settings listeners attached');
+                
+                console.log('🎯 Attaching intake listeners...');
                 attachIntakeListeners();
+                console.log('✅ Intake listeners attached');
                 
                 updateGenerateBtn();
                 updateApiStatus();
                 console.log('✅ App initialized successfully');
+                console.log('💡 Tip: Try clicking a button. Check console for any errors.');
             } catch (error) {
                 console.error('❌ Initialization error:', error);
+                console.error('📍 Stack:', error.stack);
             }
         }
 
         // Initialize when DOM is ready
+        console.log('📍 Script loading, DOM state:', document.readyState);
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
+            console.log('⏳ DOM still loading, waiting for DOMContentLoaded...');
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('✅ DOMContentLoaded fired');
+                initializeApp();
+            });
         } else {
+            console.log('✅ DOM already loaded, initializing now...');
             initializeApp();
         }
     </script>
