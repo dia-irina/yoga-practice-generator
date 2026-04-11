@@ -1217,74 +1217,156 @@
             updateApiStatus();
         });
 
-        document.getElementById('closeSettings').addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.remove('active');
-        });
-
-        document.getElementById('settingsModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('settingsModal')) {
-                document.getElementById('settingsModal').classList.remove('active');
+        // Event Listeners - Settings Modal
+        function attachSettingsListeners() {
+            const settingsBtn = document.getElementById('settingsBtn');
+            if (settingsBtn) {
+                settingsBtn.addEventListener('click', () => {
+                    document.getElementById('settingsModal').classList.add('active');
+                    document.getElementById('apiKeyInput').value = getApiKey() || '';
+                    updateApiStatus();
+                });
             }
-        });
 
-        document.getElementById('saveKeyBtn').addEventListener('click', () => {
-            const key = document.getElementById('apiKeyInput').value;
-            if (setApiKey(key)) {
-                // Show brief success feedback
-                const btn = document.getElementById('saveKeyBtn');
-                const originalText = btn.textContent;
-                btn.textContent = 'Saved ✓';
-                btn.style.backgroundColor = '#4ade80';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.backgroundColor = '';
-                }, 1500);
+            const closeSettings = document.getElementById('closeSettings');
+            if (closeSettings) {
+                closeSettings.addEventListener('click', () => {
+                    document.getElementById('settingsModal').classList.remove('active');
+                });
             }
-        });
 
-        document.getElementById('clearKeyBtn').addEventListener('click', () => {
-            if (confirm('Clear your API key? You\'ll need to enter it again.')) {
-                clearApiKey();
-                document.getElementById('apiKeyInput').value = '';
+            const settingsModal = document.getElementById('settingsModal');
+            if (settingsModal) {
+                settingsModal.addEventListener('click', (e) => {
+                    if (e.target === settingsModal) {
+                        settingsModal.classList.remove('active');
+                    }
+                });
             }
-        });
 
-        // Allow Enter to save key
-        document.getElementById('apiKeyInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                document.getElementById('saveKeyBtn').click();
+            const saveKeyBtn = document.getElementById('saveKeyBtn');
+            if (saveKeyBtn) {
+                saveKeyBtn.addEventListener('click', () => {
+                    const key = document.getElementById('apiKeyInput').value;
+                    if (setApiKey(key)) {
+                        const btn = saveKeyBtn;
+                        const originalText = btn.textContent;
+                        btn.textContent = 'Saved ✓';
+                        btn.style.backgroundColor = '#4ade80';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.style.backgroundColor = '';
+                        }, 1500);
+                    }
+                });
             }
-        });
+
+            const clearKeyBtn = document.getElementById('clearKeyBtn');
+            if (clearKeyBtn) {
+                clearKeyBtn.addEventListener('click', () => {
+                    if (confirm('Clear your API key? You\'ll need to enter it again.')) {
+                        clearApiKey();
+                        document.getElementById('apiKeyInput').value = '';
+                    }
+                });
+            }
+
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            if (apiKeyInput) {
+                apiKeyInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        document.getElementById('saveKeyBtn').click();
+                    }
+                });
+            }
+        }
 
         // Event Listeners - Intake Screen
-        document.getElementById('durationGroup').addEventListener('click', (e) => {
-            if (e.target.classList.contains('button-option')) {
-                document.querySelectorAll('#durationGroup .button-option').forEach(btn => 
-                    btn.classList.remove('selected'));
-                e.target.classList.add('selected');
-                state.duration = parseInt(e.target.dataset.duration);
-                updateGenerateBtn();
+        function attachIntakeListeners() {
+            const durationGroup = document.getElementById('durationGroup');
+            if (durationGroup) {
+                durationGroup.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('button-option')) {
+                        document.querySelectorAll('#durationGroup .button-option').forEach(btn => 
+                            btn.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        state.duration = parseInt(e.target.dataset.duration);
+                        updateGenerateBtn();
+                    }
+                });
             }
-        });
 
-        document.getElementById('focusGroup').addEventListener('click', (e) => {
-            if (e.target.classList.contains('button-option')) {
-                document.querySelectorAll('#focusGroup .button-option').forEach(btn => 
-                    btn.classList.remove('selected'));
-                e.target.classList.add('selected');
-                state.focus = e.target.dataset.focus;
-                updateGenerateBtn();
+            const focusGroup = document.getElementById('focusGroup');
+            if (focusGroup) {
+                focusGroup.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('button-option')) {
+                        document.querySelectorAll('#focusGroup .button-option').forEach(btn => 
+                            btn.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        state.focus = e.target.dataset.focus;
+                        updateGenerateBtn();
+                    }
+                });
             }
-        });
 
-        document.getElementById('musicGroup').addEventListener('click', (e) => {
-            if (e.target.classList.contains('button-option')) {
-                document.querySelectorAll('#musicGroup .button-option').forEach(btn => 
-                    btn.classList.remove('selected'));
-                e.target.classList.add('selected');
-                state.music = e.target.dataset.music;
+            const musicGroup = document.getElementById('musicGroup');
+            if (musicGroup) {
+                musicGroup.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('button-option')) {
+                        document.querySelectorAll('#musicGroup .button-option').forEach(btn => 
+                            btn.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        state.music = e.target.dataset.music;
+                    }
+                });
             }
-        });
+
+            const generateBtn = document.getElementById('generateBtn');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', generatePractice);
+            }
+
+            const beginBtn = document.getElementById('beginBtn');
+            if (beginBtn) {
+                beginBtn.addEventListener('click', startTimedPractice);
+            }
+
+            const pauseBtn = document.getElementById('pauseBtn');
+            if (pauseBtn) {
+                pauseBtn.addEventListener('click', () => {
+                    state.isPaused = !state.isPaused;
+                    pauseBtn.textContent = state.isPaused ? 'Resume' : 'Pause';
+                });
+            }
+
+            const skipBtn = document.getElementById('skipBtn');
+            if (skipBtn) {
+                skipBtn.addEventListener('click', nextPose);
+            }
+
+            const prevBtn = document.getElementById('prevBtn');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', previousPose);
+            }
+
+            const restartBtn = document.getElementById('restartBtn');
+            if (restartBtn) {
+                restartBtn.addEventListener('click', () => {
+                    state.duration = null;
+                    state.focus = null;
+                    state.music = 'none';
+                    state.currentPose = 0;
+                    state.sessionData = null;
+                    document.querySelectorAll('.button-option.selected').forEach(btn => 
+                        btn.classList.remove('selected'));
+                    document.querySelectorAll('#musicGroup .button-option').forEach(btn => 
+                        btn.classList.remove('selected'));
+                    document.querySelector('#musicGroup [data-music="none"]').classList.add('selected');
+                    updateGenerateBtn();
+                    showScreen('intake');
+                });
+            }
+        }
 
         function updateGenerateBtn() {
             const btn = document.getElementById('generateBtn');
@@ -1502,8 +1584,6 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
             `;
         }
 
-        document.getElementById('beginBtn').addEventListener('click', startTimedPractice);
-
         function startTimedPractice() {
             if (!state.sessionData) return;
             state.currentPose = 0;
@@ -1561,14 +1641,6 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
             document.getElementById('prevBtn').disabled = state.currentPose === 0;
         }
 
-        document.getElementById('pauseBtn').addEventListener('click', () => {
-            state.isPaused = !state.isPaused;
-            document.getElementById('pauseBtn').textContent = state.isPaused ? 'Resume' : 'Pause';
-        });
-
-        document.getElementById('skipBtn').addEventListener('click', nextPose);
-        document.getElementById('prevBtn').addEventListener('click', previousPose);
-
         function nextPose() {
             state.currentPose++;
             if (state.currentPose >= state.sessionData.poses.length) {
@@ -1613,21 +1685,6 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`, '_blank');
                 });
             }
-
-            document.getElementById('restartBtn').addEventListener('click', () => {
-                state.duration = null;
-                state.focus = null;
-                state.music = 'none';
-                state.currentPose = 0;
-                state.sessionData = null;
-                document.querySelectorAll('.button-option.selected').forEach(btn => 
-                    btn.classList.remove('selected'));
-                document.querySelectorAll('#musicGroup .button-option').forEach(btn => 
-                    btn.classList.remove('selected'));
-                document.querySelector('#musicGroup [data-music="none"]').classList.add('selected');
-                updateGenerateBtn();
-                showScreen('intake');
-            });
 
             showScreen('completion');
         }
@@ -1872,8 +1929,39 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
         }
 
         // Initialize
-        updateGenerateBtn();
-        updateApiStatus();
+        function initializeApp() {
+            try {
+                // Check if all key elements exist
+                const requiredElements = [
+                    'durationGroup', 'focusGroup', 'musicGroup', 'generateBtn', 
+                    'settingsBtn', 'apiKeyInput', 'saveKeyBtn', 'clearKeyBtn'
+                ];
+                
+                for (const id of requiredElements) {
+                    const el = document.getElementById(id);
+                    if (!el) {
+                        console.warn(`Missing element: ${id}`);
+                    }
+                }
+                
+                // Attach all event listeners
+                attachSettingsListeners();
+                attachIntakeListeners();
+                
+                updateGenerateBtn();
+                updateApiStatus();
+                console.log('✅ App initialized successfully');
+            } catch (error) {
+                console.error('❌ Initialization error:', error);
+            }
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
     </script>
 </body>
 </html>
