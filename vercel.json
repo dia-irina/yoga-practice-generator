@@ -1,18 +1,9 @@
 {
   "version": 2,
-  "routes": [
-    {
-      "src": "/api/generate",
-      "dest": "/api/generate.js",
-      "methods": ["POST"]
-    },
-    {
-      "src": "/index.html",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/[^.]+$",
-      "dest": "/index.html"
+  "public": ".",
+  "functions": {
+    "api/generate.js": {
+      "maxDuration": 60
     }
-  ]
+  }
 }
