@@ -1,9 +1,0 @@
-{
-  "version": 2,
-  "public": ".",
-  "functions": {
-    "api/generate.js": {
-      "maxDuration": 60
-    }
-  }
-}
