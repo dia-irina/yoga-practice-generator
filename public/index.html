@@ -1546,11 +1546,39 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     throw new Error('Invalid response structure from API - missing content');
                 }
                 
-                const content = data.content[0].text;
+                let content = data.content[0].text;
 
-                // Parse JSON response
+                // Parse JSON response - handle markdown code blocks and whitespace
                 let sessionData;
                 try {
+                    // Try to extract JSON from markdown code blocks if present
+                    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+                    if (jsonMatch) {
+                        content = jsonMatch[1];
+                    }
+                    
+                    // Trim whitespace and handle common issues
+                    content = content.trim();
+                    
+                    // If there's text before the JSON object, try to find the actual JSON
+                    if (!content.startsWith('{')) {
+                        const jsonStart = content.indexOf('{');
+                        if (jsonStart !== -1) {
+                            content = content.substring(jsonStart);
+                        }
+                    }
+                    
+                    // Find the last closing brace to handle trailing text
+                    if (content.endsWith('}')) {
+                        // Good, it's clean
+                    } else {
+                        const lastBrace = content.lastIndexOf('}');
+                        if (lastBrace !== -1) {
+                            content = content.substring(0, lastBrace + 1);
+                        }
+                    }
+                    
+                    console.log('🔍 Parsing JSON content (', content.length, 'chars):', content.substring(0, 100) + '...');
                     sessionData = JSON.parse(content);
                 } catch (e) {
                     console.error('Failed to parse content as JSON. Content:', content.substring(0, 500));
