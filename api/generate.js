@@ -53,13 +53,25 @@ module.exports = function handler(req, res) {
     });
 
     proxyRes.on('end', () => {
-      res.status(proxyRes.statusCode).send(responseData);
+      try {
+        // Validate response is JSON
+        const parsed = JSON.parse(responseData);
+        
+        // Send back as JSON
+        res.status(proxyRes.statusCode).json(parsed);
+      } catch (error) {
+        console.error('Failed to parse Anthropic response:', responseData);
+        res.status(502).json({ 
+          error: 'Invalid response from Anthropic API',
+          details: responseData.substring(0, 200)
+        });
+      }
     });
   });
 
   proxyReq.on('error', (error) => {
     console.error('API request error:', error);
-    res.status(500).json({ error: 'Failed to reach Anthropic API' });
+    res.status(500).json({ error: 'Failed to reach Anthropic API', details: error.message });
   });
 
   proxyReq.write(payload);

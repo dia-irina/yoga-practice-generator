@@ -1467,6 +1467,18 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                 }
 
                 const data = await response.json();
+                
+                // Check if API returned an error
+                if (data.error) {
+                    throw new Error(`API Error: ${data.error}${data.details ? ' - ' + data.details : ''}`);
+                }
+                
+                // Validate response structure
+                if (!data.content || !data.content[0] || !data.content[0].text) {
+                    console.error('Invalid API response structure:', JSON.stringify(data).substring(0, 500));
+                    throw new Error('Invalid response structure from API - missing content');
+                }
+                
                 const content = data.content[0].text;
 
                 // Parse JSON response
@@ -1474,7 +1486,8 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                 try {
                     sessionData = JSON.parse(content);
                 } catch (e) {
-                    throw new Error('Failed to parse AI response as JSON');
+                    console.error('Failed to parse content as JSON. Content:', content.substring(0, 500));
+                    throw new Error('Failed to parse yoga sequence as JSON: ' + e.message);
                 }
 
                 state.sessionData = sessionData;
@@ -1498,12 +1511,25 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     <br><br>
                     <strong>If you're using a shared link:</strong>
                     <br>Your internet connection may be blocked. Try refreshing the page.`;
-                } else if (error.message.includes('Invalid request')) {
-                    errorMsg = `<strong>Request Error:</strong> The API received an invalid request. Check your API key in Settings.`;
-                } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-                    errorMsg = `<strong>Unauthorized:</strong> Your API key is invalid or expired. Go to Settings to check it.`;
+                } else if (error.message.includes('Unauthorized') || error.message.includes('401')) {
+                    errorMsg = `<strong>Unauthorized:</strong> Your API key is invalid or expired. <br><br>
+                    <strong>Steps to fix:</strong>
+                    <br>1. Go to Settings (⚙ icon)
+                    <br>2. Get a new key from <a href="https://console.anthropic.com/account/keys" target="_blank">console.anthropic.com</a>
+                    <br>3. Paste and save the new key
+                    <br>4. Try generating again`;
+                } else if (error.message.includes('Invalid response structure')) {
+                    errorMsg = `<strong>API Response Error:</strong> The API returned an invalid response structure.<br><br>
+                    This usually means:<br>
+                    • Your API key is working but something is wrong with the request<br>
+                    • Try refreshing and generating again`;
+                } else if (error.message.includes('Failed to parse')) {
+                    errorMsg = `<strong>Response Parse Error:</strong> ${error.message}<br><br>
+                    The API response couldn't be parsed. This might be due to network issues or API changes.`;
                 } else if (error.message.includes('429') || error.message.includes('rate limit')) {
                     errorMsg = `<strong>Rate Limited:</strong> Too many requests. Please wait a moment and try again.`;
+                } else if (error.message.includes('Invalid request')) {
+                    errorMsg = `<strong>Request Error:</strong> ${error.message}`;
                 }
                 
                 showErrorMessage(errorMsg);
