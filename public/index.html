@@ -1477,9 +1477,15 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
 
                 const data = await response.json();
                 
+                // Log response for debugging
+                console.log('📊 API Response:', data);
+                
                 // Check if API returned an error
                 if (data.error) {
-                    throw new Error(`API Error: ${data.error}${data.details ? ' (' + data.details + ')' : ''}`);
+                    let errorMsg = `API Error: ${data.error}`;
+                    if (data.details) errorMsg += ` (${data.details})`;
+                    if (data.keyPreview) errorMsg += ` [Key: ${data.keyPreview}, Length: ${data.keyLength}]`;
+                    throw new Error(errorMsg);
                 }
                 
                 // Validate response structure

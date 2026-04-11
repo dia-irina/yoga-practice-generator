@@ -25,6 +25,15 @@ module.exports = function handler(req, res) {
     return;
   }
 
+  // Log key format for debugging (only show first/last few chars)
+  const keyPreview = apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 5);
+  console.log(`📝 API Key format check: ${keyPreview} (length: ${apiKey.length})`);
+  console.log(`🔑 Sending to Anthropic with headers:`, {
+    'Content-Type': 'application/json',
+    'x-api-key': `${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 5)}`,
+    'anthropic-version': '2023-06-01'
+  });
+
   const payload = JSON.stringify({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 2048,
@@ -57,7 +66,14 @@ module.exports = function handler(req, res) {
         // Validate response is JSON
         const parsed = JSON.parse(responseData);
         
-        console.log(`Anthropic API Response (${proxyRes.statusCode}):`, parsed);
+        console.log(`Anthropic API Response (${proxyRes.statusCode}):`, JSON.stringify(parsed).substring(0, 500));
+        
+        // If error, add diagnostic info
+        if (proxyRes.statusCode === 401) {
+          parsed.keyPreview = apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 5);
+          parsed.keyLength = apiKey.length;
+          parsed.diagnostic = 'API key was rejected. Check console.anthropic.com to verify key is valid.';
+        }
         
         // Send back as JSON
         res.status(proxyRes.statusCode).json(parsed);
