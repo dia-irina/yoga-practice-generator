@@ -1463,14 +1463,23 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                    // Try to get error details from response
+                    let errorDetail = '';
+                    try {
+                        const errorData = await response.json();
+                        errorDetail = errorData.error || errorData.message || response.statusText;
+                        if (errorData.details) errorDetail += ' (' + errorData.details + ')';
+                    } catch {
+                        errorDetail = response.statusText;
+                    }
+                    throw new Error(`API Error: ${response.status} - ${errorDetail}`);
                 }
 
                 const data = await response.json();
                 
                 // Check if API returned an error
                 if (data.error) {
-                    throw new Error(`API Error: ${data.error}${data.details ? ' - ' + data.details : ''}`);
+                    throw new Error(`API Error: ${data.error}${data.details ? ' (' + data.details + ')' : ''}`);
                 }
                 
                 // Validate response structure
@@ -1511,13 +1520,19 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     <br><br>
                     <strong>If you're using a shared link:</strong>
                     <br>Your internet connection may be blocked. Try refreshing the page.`;
-                } else if (error.message.includes('Unauthorized') || error.message.includes('401')) {
-                    errorMsg = `<strong>Unauthorized:</strong> Your API key is invalid or expired. <br><br>
-                    <strong>Steps to fix:</strong>
-                    <br>1. Go to Settings (⚙ icon)
-                    <br>2. Get a new key from <a href="https://console.anthropic.com/account/keys" target="_blank">console.anthropic.com</a>
-                    <br>3. Paste and save the new key
-                    <br>4. Try generating again`;
+                } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                    errorMsg = `<strong>❌ API Key Invalid or Expired</strong>
+                    <br><br>
+                    <strong>Your Anthropic API key was rejected.</strong>
+                    <br><br>
+                    <strong>To fix this:</strong>
+                    <br><strong>1.</strong> Log in to <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+                    <br><strong>2.</strong> Go to Account → API Keys
+                    <br><strong>3.</strong> Create a NEW API key (should start with <code>sk-ant-</code>)
+                    <br><strong>4.</strong> Copy the entire key
+                    <br><strong>5.</strong> Click ⚙️ Settings in this app
+                    <br><strong>6.</strong> Paste the new key and click Save
+                    <br><strong>7.</strong> Try generating again`;
                 } else if (error.message.includes('Invalid response structure')) {
                     errorMsg = `<strong>API Response Error:</strong> The API returned an invalid response structure.<br><br>
                     This usually means:<br>

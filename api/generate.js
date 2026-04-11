@@ -57,13 +57,16 @@ module.exports = function handler(req, res) {
         // Validate response is JSON
         const parsed = JSON.parse(responseData);
         
+        console.log(`Anthropic API Response (${proxyRes.statusCode}):`, parsed);
+        
         // Send back as JSON
         res.status(proxyRes.statusCode).json(parsed);
       } catch (error) {
         console.error('Failed to parse Anthropic response:', responseData);
         res.status(502).json({ 
           error: 'Invalid response from Anthropic API',
-          details: responseData.substring(0, 200)
+          details: responseData.substring(0, 200),
+          statusCode: proxyRes.statusCode
         });
       }
     });
