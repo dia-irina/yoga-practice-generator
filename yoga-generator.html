@@ -1210,13 +1210,6 @@
             completion: document.getElementById('completionScreen')
         };
 
-        // Settings Modal Event Listeners
-        document.getElementById('settingsBtn').addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.add('active');
-            document.getElementById('apiKeyInput').value = getApiKey() || '';
-            updateApiStatus();
-        });
-
         // Event Listeners - Settings Modal
         function attachSettingsListeners() {
             const settingsBtn = document.getElementById('settingsBtn');
@@ -1372,8 +1365,6 @@
             const btn = document.getElementById('generateBtn');
             btn.disabled = !state.duration || !state.focus;
         }
-
-        document.getElementById('generateBtn').addEventListener('click', generatePractice);
 
         async function generatePractice() {
             const apiKey = getApiKey();
