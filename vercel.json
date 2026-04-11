@@ -1,12 +1,6 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/generate.js",
-      "use": "@vercel/node",
-      "config": { "maxDuration": 60 }
-    }
-  ],
+  "buildCommand": "echo 'No build needed'",
   "routes": [
     {
       "src": "/api/generate",
@@ -14,7 +8,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/public/index.html"
+      "dest": "/api/index.js"
     }
   ]
 }
