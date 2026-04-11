@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Yoga Practice">
+    <meta name="theme-color" content="#d4c5b9">
+    <title>Yoga Practice Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-bg: #faf8f5;
+            --accent-warm: #d4c5b9;
+            --accent-tan: #e8dfd7;
+            --accent-sage: #a8b8a8;
+            --text-dark: #4a4a48;
+            --text-light: #8a8a88;
+            --text-muted: #b8b8b6;
+            --border-subtle: #e8dfd7;
+            --success: #a8b8a8;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Screen States */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Header */
+        .header {
+            padding: 1.5rem 1.5rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-subtle);
+            background-color: var(--primary-bg);
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 300;
+            color: var(--text-dark);
+            letter-spacing: 0.5px;
+        }
+
+        .header p {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        /* Content */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Intake Screen */
+        .intake-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .intake-label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-dark);
+            margin-bottom: 0.75rem;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .button-option {
+            flex: 0 1 calc(50% - 0.375rem);
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--accent-tan);
+            background-color: white;
+            color: var(--text-dark);
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .button-option:hover {
+            border-color: var(--accent-sage);
+            background-color: var(--accent-tan);
+        }
+
+        .button-option.selected {
+            background-color: var(--accent-sage);
+            color: white;
+            border-color: var(--accent-sage);
+        }
+
+        .button-option.small {
+            flex: 0 1 calc(33.33% - 0.5rem);
+        }
+
+        .button-option.full {
+            flex: 1;
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            background-color: var(--accent-sage);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background-color: #95a595;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading Screen */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--accent-tan);
+            border-top: 3px solid var(--accent-sage);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 1.25rem;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-subtext {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        /* Practice Overview */
+        .session-intro {
+            background-color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .session-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .session-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        .session-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .session-intention {
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--text-dark);
+            padding: 1rem;
+            background-color: var(--accent-tan);
+            border-radius: 8px;
+        }
+
+        .poses-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .pose-card {
+            background-color: white;
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .pose-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .pose-card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .pose-names {
+            flex: 1;
+        }
+
+        .pose-english {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .pose-sanskrit {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            font-style: italic;
+        }
+
+        .pose-duration {
+            font-size: 0.875rem;
+            background-color: var(--accent-tan);
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            color: var(--text-dark);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .pose-card-body {
+            padding: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .pose-svg {
+            flex-shrink: 0;
+            width: 160px;
+            height: 160px;
+            background-color: var(--primary-bg);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pose-info {
+            flex: 1;
+        }
+
+        .pose-benefit {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .pose-cue-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .pose-cue {
+            font-size: 0.875rem;
+            color: var(--text-dark);
+            line-height: 1.5;
+            background-color: #fefdfb;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+        }
+
+        .pose-transition {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            font-style: italic;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .begin-button {
+            width: 100%;
+            padding: 1.125rem;
+            background-color: var(--accent-sage);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 1rem;
+        }
+
+        .begin-button:hover {
+            background-color: #95a595;
+        }
+
+        /* Timer Screen */
+        .timer-screen {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background-color: var(--primary-bg);
+        }
+
+        .timer-header {
+            padding: 1rem 1.5rem;
+            background-color: white;
+            border-bottom: 1px solid var(--border-subtle);
+            text-align: center;
+        }
+
+        .timer-progress {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .timer-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            overflow-y: auto;
+        }
+
+        .pose-display-name {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pose-display-english {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .pose-display-sanskrit {
+            font-size: 1.25rem;
+            color: var(--text-light);
+            font-style: italic;
+            margin-bottom: 2rem;
+        }
+
+        .pose-display-svg {
+            width: 200px;
+            height: 200px;
+            background-color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .timer-display {
+            font-size: 5rem;
+            font-weight: 300;
+            color: var(--accent-sage);
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 0.5rem;
+            min-width: 10rem;
+        }
+
+        .timer-breaths {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+        }
+
+        .pose-display-cue {
+            font-size: 1rem;
+            color: var(--text-dark);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-width: 28rem;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .timer-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--accent-tan);
+            background-color: white;
+            color: var(--text-dark);
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 0;
+        }
+
+        .timer-btn:hover {
+            background-color: var(--accent-tan);
+        }
+
+        .timer-btn.primary {
+            background-color: var(--accent-sage);
+            color: white;
+            border-color: var(--accent-sage);
+            min-width: 6rem;
+        }
+
+        .timer-btn.primary:hover {
+            background-color: #95a595;
+        }
+
+        .timer-btn.disabled,
+        .timer-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Completion Screen */
+        .completion-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 2rem 1.5rem;
+            text-align: center;
+        }
+
+        .completion-icon {
+            width: 80px;
+            height: 80px;
+            background-color: var(--success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .completion-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .completion-text {
+            font-size: 1rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+        }
+
+        .completion-summary {
+            background-color: white;
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 20rem;
+        }
+
+        .summary-item {
+            text-align: left;
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-dark);
+        }
+
+        .summary-label {
+            color: var(--text-light);
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .music-suggestion {
+            background-color: var(--accent-tan);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 20rem;
+        }
+
+        .music-label {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-bottom: 0.75rem;
+        }
+
+        .music-search {
+            font-size: 1rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+        }
+
+        .music-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .music-btn {
+            padding: 0.5rem 1rem;
+            background-color: white;
+            border: 1px solid var(--text-light);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .music-btn:hover {
+            background-color: var(--accent-sage);
+            color: white;
+            border-color: var(--accent-sage);
+        }
+
+        .restart-btn {
+            width: 100%;
+            max-width: 20rem;
+            padding: 1rem;
+            background-color: var(--accent-sage);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .restart-btn:hover {
+            background-color: #95a595;
+        }
+
+        /* Error State */
+        .error-container {
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .error-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #991b1b;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-message {
+            font-size: 0.875rem;
+            color: #7f1d1d;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .error-message code {
+            background-color: #fce7e6;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            word-break: break-all;
+            display: inline-block;
+        }
+
+        .error-message strong {
+            color: #991b1b;
+            font-weight: 600;
+        }
+
+        .error-btn {
+            padding: 0.75rem 1.5rem;
+            background-color: #991b1b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .error-btn:hover {
+            background-color: #7f1d1d;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .button-option {
+                flex: 0 1 calc(50% - 0.375rem);
+            }
+
+            .button-option.small {
+                flex: 0 1 calc(50% - 0.375rem);
+            }
+
+            .pose-card-body {
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .pose-svg {
+                width: 100%;
+                height: 140px;
+            }
+
+            .timer-display {
+                font-size: 3.5rem;
+            }
+
+            .timer-controls {
+                flex-direction: column;
+            }
+
+            .timer-btn {
+                flex: 1;
+            }
+        }
+
+        .pose-index {
+            font-size: 0.75rem;
+            background-color: var(--accent-tan);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .pose-card-header-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        /* Settings */
+        .header {
+            position: relative;
+        }
+
+        .settings-button {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-tan);
+            background-color: white;
+            color: var(--text-dark);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .settings-button:hover {
+            background-color: var(--accent-tan);
+            border-color: var(--accent-sage);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--primary-bg);
+            border-radius: 16px 16px 0 0;
+            padding: 2rem 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--text-dark);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem;
+            font-size: 0.875rem;
+            border: 2px solid var(--accent-tan);
+            border-radius: 8px;
+            background-color: white;
+            color: var(--text-dark);
+            font-family: 'Courier New', monospace;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-sage);
+            box-shadow: 0 0 0 3px rgba(168, 184, 168, 0.1);
+        }
+
+        .form-input[type="password"]::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-help {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            background-color: white;
+            border: 1px solid var(--border-subtle);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .api-status.connected {
+            background-color: #f0fdf4;
+            border-color: #86efac;
+            color: #166534;
+        }
+
+        .api-status.not-set {
+            background-color: #fef2f2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-indicator.connected {
+            background-color: #22c55e;
+        }
+
+        .status-indicator.not-set {
+            background-color: #ef4444;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 2rem;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 0.875rem;
+            border: 2px solid var(--accent-tan);
+            background-color: white;
+            color: var(--text-dark);
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-btn:hover {
+            border-color: var(--accent-sage);
+            background-color: var(--accent-tan);
+        }
+
+        .modal-btn.primary {
+            background-color: var(--accent-sage);
+            color: white;
+            border-color: var(--accent-sage);
+        }
+
+        .modal-btn.primary:hover {
+            background-color: #95a595;
+        }
+
+        .modal-btn.secondary {
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+
+        .modal-btn.secondary:hover {
+            background-color: #fef2f2;
+            border-color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Intake Screen -->
+        <div class="screen active" id="intakeScreen">
+            <div class="header">
+                <h1>Yoga Practice</h1>
+                <p>Create your personalized session</p>
+                <button class="settings-button" id="settingsBtn" title="Settings">⚙</button>
+            </div>
+            <div class="content">
+                <div class="intake-section">
+                    <label class="intake-label">How much time do you have?</label>
+                    <div class="button-group" id="durationGroup">
+                        <button class="button-option" data-duration="15">15 min</button>
+                        <button class="button-option" data-duration="30">30 min</button>
+                        <button class="button-option" data-duration="45">45 min</button>
+                        <button class="button-option" data-duration="60">60 min</button>
+                        <button class="button-option" data-duration="90">90 min</button>
+                    </div>
+                </div>
+
+                <div class="intake-section">
+                    <label class="intake-label">What area would you like to focus on?</label>
+                    <div class="button-group" id="focusGroup">
+                        <button class="button-option" data-focus="full body">Full Body</button>
+                        <button class="button-option" data-focus="hips & lower back">Hips & Lower Back</button>
+                        <button class="button-option" data-focus="shoulders & chest">Shoulders & Chest</button>
+                        <button class="button-option" data-focus="core">Core</button>
+                        <button class="button-option" data-focus="legs & hamstrings">Legs & Hamstrings</button>
+                        <button class="button-option" data-focus="spine & flexibility">Spine & Flexibility</button>
+                        <button class="button-option" data-focus="restorative/stress relief">Restorative/Stress Relief</button>
+                    </div>
+                </div>
+
+                <div class="intake-section">
+                    <label class="intake-label">Optional: Background music mood</label>
+                    <div class="button-group" id="musicGroup">
+                        <button class="button-option selected" data-music="none">None</button>
+                        <button class="button-option" data-music="calm & meditative">Calm & Meditative</button>
+                        <button class="button-option" data-music="energizing & upbeat">Energizing & Upbeat</button>
+                        <button class="button-option" data-music="nature sounds">Nature Sounds</button>
+                        <button class="button-option" data-music="ambient/drone">Ambient/Drone</button>
+                    </div>
+                </div>
+
+                <button class="submit-btn" id="generateBtn" disabled>Generate My Practice</button>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div class="screen" id="loadingScreen">
+            <div class="header">
+                <h1>Yoga Practice</h1>
+            </div>
+            <div class="content">
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Crafting your practice…</div>
+                    <div class="loading-subtext">The wisdom is flowing</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Practice Overview Screen -->
+        <div class="screen" id="overviewScreen">
+            <div class="header">
+                <h1>Your Practice</h1>
+                <p id="overviewSubtitle">Scroll to see your sequence</p>
+            </div>
+            <div class="content">
+                <div id="errorContainer"></div>
+                <div id="sessionContainer"></div>
+                <button class="begin-button" id="beginBtn">Begin Practice</button>
+            </div>
+        </div>
+
+        <!-- Timer Screen -->
+        <div class="screen" id="timerScreen">
+            <div class="timer-header">
+                <div class="timer-progress" id="timerProgress">Pose 1 of 10</div>
+            </div>
+            <div class="timer-main">
+                <div class="pose-display-name" id="timerPoseIndex">Warm-up</div>
+                <div class="pose-display-english" id="timerPoseEnglish">Mountain Pose</div>
+                <div class="pose-display-sanskrit" id="timerPoseSanskrit">Tadasana</div>
+                <div class="pose-display-svg" id="timerPoseSvg"></div>
+                <div class="timer-display" id="timerDisplay">0:30</div>
+                <div class="timer-breaths" id="timerBreaths">3 breaths</div>
+                <div class="pose-display-cue" id="timerCue">Alignment cue here</div>
+                <div class="timer-controls">
+                    <button class="timer-btn" id="pauseBtn">Pause</button>
+                    <button class="timer-btn" id="prevBtn">← Back</button>
+                    <button class="timer-btn primary" id="skipBtn">Skip →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div class="screen" id="completionScreen">
+            <div class="header">
+                <h1>Practice Complete</h1>
+            </div>
+            <div class="content">
+                <div class="completion-container">
+                    <div class="completion-icon">🙏</div>
+                    <h2 class="completion-title">Namaste</h2>
+                    <p class="completion-text">You've completed your practice. Take a moment to notice how you feel.</p>
+                    
+                    <div class="completion-summary">
+                        <div class="summary-item">
+                            <div class="summary-label">Duration</div>
+                            <div id="completionDuration">—</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Focus Area</div>
+                            <div id="completionFocus">—</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Poses</div>
+                            <div id="completionPoseCount">—</div>
+                        </div>
+                    </div>
+
+                    <div class="music-suggestion" id="musicSuggestion" style="display: none;">
+                        <div class="music-label">Suggested music to continue the vibe:</div>
+                        <div class="music-search" id="musicSearchQuery">—</div>
+                        <div class="music-buttons">
+                            <button class="music-btn" id="spotifyBtn">Open Spotify</button>
+                            <button class="music-btn" id="youtubeBtn">Open YouTube</button>
+                        </div>
+                    </div>
+
+                    <button class="restart-btn" id="restartBtn">Start Another Practice</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Settings</h2>
+                <button class="modal-close" id="closeSettings">✕</button>
+            </div>
+
+            <div class="api-status" id="apiStatus">
+                <span class="status-indicator not-set"></span>
+                <span>API Key not set</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="apiKeyInput">Anthropic API Key</label>
+                <input
+                    type="password"
+                    id="apiKeyInput"
+                    class="form-input"
+                    placeholder="sk-ant-..."
+                >
+                <div class="form-help">
+                    Get your API key from <a href="https://console.anthropic.com/account/keys" target="_blank">console.anthropic.com</a>. It will be stored only in your browser session.
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="clearKeyBtn">Clear Key</button>
+                <button class="modal-btn primary" id="saveKeyBtn">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        const state = {
+            duration: null,
+            focus: null,
+            music: 'none',
+            currentPose: 0,
+            isPaused: false,
+            timeRemaining: 0,
+            sessionData: null,
+            timerInterval: null
+        };
+
+        // API Key Management
+        const API_KEY_STORAGE = 'yoga_anthropic_api_key';
+
+        function getApiKey() {
+            return sessionStorage.getItem(API_KEY_STORAGE);
+        }
+
+        function setApiKey(key) {
+            if (key && key.trim()) {
+                sessionStorage.setItem(API_KEY_STORAGE, key.trim());
+                updateApiStatus();
+                return true;
+            }
+            return false;
+        }
+
+        function clearApiKey() {
+            sessionStorage.removeItem(API_KEY_STORAGE);
+            updateApiStatus();
+        }
+
+        function updateApiStatus() {
+            const hasKey = !!getApiKey();
+            const statusEl = document.getElementById('apiStatus');
+            const indicator = statusEl.querySelector('.status-indicator');
+            const statusText = statusEl.querySelector('span:last-child');
+
+            if (hasKey) {
+                indicator.classList.remove('not-set');
+                indicator.classList.add('connected');
+                statusEl.classList.remove('not-set');
+                statusEl.classList.add('connected');
+                statusText.textContent = 'API Key is saved ✓';
+            } else {
+                indicator.classList.remove('connected');
+                indicator.classList.add('not-set');
+                statusEl.classList.remove('connected');
+                statusEl.classList.add('not-set');
+                statusText.textContent = 'API Key not set';
+            }
+        }
+
+        // DOM Elements
+        const screens = {
+            intake: document.getElementById('intakeScreen'),
+            loading: document.getElementById('loadingScreen'),
+            overview: document.getElementById('overviewScreen'),
+            timer: document.getElementById('timerScreen'),
+            completion: document.getElementById('completionScreen')
+        };
+
+        // Event Listeners - Settings Modal
+        function attachSettingsListeners() {
+            const settingsBtn = document.getElementById('settingsBtn');
+            if (settingsBtn) {
+                settingsBtn.addEventListener('click', () => {
+                    document.getElementById('settingsModal').classList.add('active');
+                    document.getElementById('apiKeyInput').value = getApiKey() || '';
+                    updateApiStatus();
+                });
+            }
+
+            const closeSettings = document.getElementById('closeSettings');
+            if (closeSettings) {
+                closeSettings.addEventListener('click', () => {
+                    document.getElementById('settingsModal').classList.remove('active');
+                });
+            }
+
+            const settingsModal = document.getElementById('settingsModal');
+            if (settingsModal) {
+                settingsModal.addEventListener('click', (e) => {
+                    if (e.target === settingsModal) {
+                        settingsModal.classList.remove('active');
+                    }
+                });
+            }
+
+            const saveKeyBtn = document.getElementById('saveKeyBtn');
+            if (saveKeyBtn) {
+                saveKeyBtn.addEventListener('click', () => {
+                    const key = document.getElementById('apiKeyInput').value;
+                    if (setApiKey(key)) {
+                        const btn = saveKeyBtn;
+                        const originalText = btn.textContent;
+                        btn.textContent = 'Saved ✓';
+                        btn.style.backgroundColor = '#4ade80';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.style.backgroundColor = '';
+                        }, 1500);
+                    }
+                });
+            }
+
+            const clearKeyBtn = document.getElementById('clearKeyBtn');
+            if (clearKeyBtn) {
+                clearKeyBtn.addEventListener('click', () => {
+                    if (confirm('Clear your API key? You\'ll need to enter it again.')) {
+                        clearApiKey();
+                        document.getElementById('apiKeyInput').value = '';
+                    }
+                });
+            }
+
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            if (apiKeyInput) {
+                apiKeyInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        document.getElementById('saveKeyBtn').click();
+                    }
+                });
+            }
+        }
+
+        // Event Listeners - Intake Screen
+        function attachIntakeListeners() {
+            console.log('🎛️ attachIntakeListeners called');
+            
+            const durationGroup = document.getElementById('durationGroup');
+            if (durationGroup) {
+                console.log('  ✅ durationGroup found, attaching listener');
+                durationGroup.addEventListener('click', (e) => {
+                    console.log('🔘 Duration button clicked:', e.target.textContent);
+                    if (e.target.classList.contains('button-option')) {
+                        document.querySelectorAll('#durationGroup .button-option').forEach(btn => 
+                            btn.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        state.duration = parseInt(e.target.dataset.duration);
+                        console.log('⏱️ Duration set to:', state.duration);
+                        updateGenerateBtn();
+                    }
+                });
+            } else {
+                console.log('  ❌ durationGroup NOT found');
+            }
+
+            const focusGroup = document.getElementById('focusGroup');
+            if (focusGroup) {
+                focusGroup.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('button-option')) {
+                        document.querySelectorAll('#focusGroup .button-option').forEach(btn => 
+                            btn.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        state.focus = e.target.dataset.focus;
+                        updateGenerateBtn();
+                    }
+                });
+            }
+
+            const musicGroup = document.getElementById('musicGroup');
+            if (musicGroup) {
+                musicGroup.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('button-option')) {
+                        document.querySelectorAll('#musicGroup .button-option').forEach(btn => 
+                            btn.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        state.music = e.target.dataset.music;
+                    }
+                });
+            }
+
+            const generateBtn = document.getElementById('generateBtn');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', generatePractice);
+            }
+
+            const beginBtn = document.getElementById('beginBtn');
+            if (beginBtn) {
+                beginBtn.addEventListener('click', startTimedPractice);
+            }
+
+            const pauseBtn = document.getElementById('pauseBtn');
+            if (pauseBtn) {
+                pauseBtn.addEventListener('click', () => {
+                    state.isPaused = !state.isPaused;
+                    pauseBtn.textContent = state.isPaused ? 'Resume' : 'Pause';
+                });
+            }
+
+            const skipBtn = document.getElementById('skipBtn');
+            if (skipBtn) {
+                skipBtn.addEventListener('click', nextPose);
+            }
+
+            const prevBtn = document.getElementById('prevBtn');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', previousPose);
+            }
+
+            const restartBtn = document.getElementById('restartBtn');
+            if (restartBtn) {
+                restartBtn.addEventListener('click', () => {
+                    state.duration = null;
+                    state.focus = null;
+                    state.music = 'none';
+                    state.currentPose = 0;
+                    state.sessionData = null;
+                    document.querySelectorAll('.button-option.selected').forEach(btn => 
+                        btn.classList.remove('selected'));
+                    document.querySelectorAll('#musicGroup .button-option').forEach(btn => 
+                        btn.classList.remove('selected'));
+                    document.querySelector('#musicGroup [data-music="none"]').classList.add('selected');
+                    updateGenerateBtn();
+                    showScreen('intake');
+                });
+            }
+        }
+
+        function updateGenerateBtn() {
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = !state.duration || !state.focus;
+        }
+
+        async function generatePractice() {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                alert('Please enter your Anthropic API key in Settings before generating a practice.');
+                document.getElementById('settingsBtn').click();
+                return;
+            }
+
+            showScreen('loading');
+
+            const systemPrompt = `You are a 200-hour certified yoga teacher with a warm, encouraging, and knowledgeable voice. 
+Your role is to create personalized yoga practices that are anatomically sound, safe, and inspiring.
+
+When generating a practice:
+1. Always respect the user's requested duration strictly - calculate pose times to match exactly
+2. Follow a logical sequence: warm-up → standing poses → peak intensity (if appropriate) → backbends or folds (with counter-poses) → cooling poses → savasana
+3. Choose poses that align with the user's focus area
+4. Vary your pose selections even for the same inputs - ensure each practice feels unique
+5. Always include savasana (final rest pose) at the end
+6. Provide clear, encouraging alignment cues
+7. Include smooth transition suggestions between poses
+8. Respect anatomical logic - no cold deep backbends, always counter-poses after intense stretches
+9. Calculate breath count: average 1 breath every 4 seconds, so for 30 seconds ≈ 7-8 breaths
+
+Return your response as VALID JSON only (no markdown, no code blocks) with this exact structure:
+{
+  "sessionTitle": "string - creative title reflecting the practice",
+  "totalDuration": number - total seconds (should match requested duration),
+  "intention": "string - one-line theme for the session",
+  "poses": [
+    {
+      "englishName": "string",
+      "sanskritName": "string",
+      "durationSeconds": number,
+      "breathCount": number,
+      "bodyBenefit": "string - what this pose does for the body",
+      "alignmentCue": "string - specific, actionable alignment guidance",
+      "transitionCue": "string - how to transition to this pose from the previous",
+      "poseCategory": "string - one of: warm-up, standing, peak, backbend, fold, cool-down, restorative, savasana"
+    }
+  ]
+}`;
+
+            const userPrompt = `Create a ${state.duration}-minute yoga practice with these preferences:
+- Focus area: ${state.focus}
+- Background music mood: ${state.music}
+
+Generate a complete, varied sequence that feels authentic and anatomically sound.`;
+
+            try {
+                // Auto-detect API endpoint based on environment
+                let apiEndpoint;
+                const isLocal = window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1' ||
+                               window.location.port === '5500' ||
+                               window.location.port === '3000' ||
+                               window.location.port === '8000' ||
+                               window.location.port === '8080';
+
+                if (isLocal) {
+                    // Local backend server
+                    apiEndpoint = 'http://localhost:3000/api/generate';
+                    console.log('🔗 Using local API endpoint:', apiEndpoint);
+                } else {
+                    // Production: Vercel serverless function - use full URL
+                    apiEndpoint = `${window.location.origin}/api/generate`;
+                    console.log('🔗 Using production API endpoint:', apiEndpoint);
+                }
+
+                const requestBody = {
+                    apiKey: apiKey,
+                    system: systemPrompt,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: userPrompt
+                        }
+                    ]
+                };
+
+                console.log('📤 Sending request to:', apiEndpoint);
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const content = data.content[0].text;
+
+                // Parse JSON response
+                let sessionData;
+                try {
+                    sessionData = JSON.parse(content);
+                } catch (e) {
+                    throw new Error('Failed to parse AI response as JSON');
+                }
+
+                state.sessionData = sessionData;
+                state.currentPose = 0;
+                state.isPaused = false;
+
+                displayPracticeOverview(sessionData);
+                showScreen('overview');
+            } catch (error) {
+                console.error('Error generating practice:', error);
+                
+                let errorMsg = error.message;
+                
+                if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+                    errorMsg = `<strong>Connection Error:</strong> Unable to reach the API. 
+                    <br><br>
+                    <strong>If you're using the app locally:</strong>
+                    <br>1. Open a terminal in the app folder
+                    <br>2. Run: <code>node server.js</code>
+                    <br>3. Refresh this page
+                    <br><br>
+                    <strong>If you're using a shared link:</strong>
+                    <br>Your internet connection may be blocked. Try refreshing the page.`;
+                } else if (error.message.includes('Invalid request')) {
+                    errorMsg = `<strong>Request Error:</strong> The API received an invalid request. Check your API key in Settings.`;
+                } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                    errorMsg = `<strong>Unauthorized:</strong> Your API key is invalid or expired. Go to Settings to check it.`;
+                } else if (error.message.includes('429') || error.message.includes('rate limit')) {
+                    errorMsg = `<strong>Rate Limited:</strong> Too many requests. Please wait a moment and try again.`;
+                }
+                
+                showErrorMessage(errorMsg);
+                showScreen('overview');
+            }
+        }
+
+        function displayPracticeOverview(sessionData) {
+            const container = document.getElementById('sessionContainer');
+            container.innerHTML = '';
+
+            // Session intro
+            const intro = document.createElement('div');
+            intro.className = 'session-intro';
+            intro.innerHTML = `
+                <h2 class="session-title">${sessionData.sessionTitle}</h2>
+                <div class="session-meta">
+                    <span>⏱ ${Math.round(sessionData.totalDuration / 60)} minutes</span>
+                    <span>🧘 ${sessionData.poses.length} poses</span>
+                </div>
+                <div class="session-intention">"${sessionData.intention}"</div>
+            `;
+            container.appendChild(intro);
+
+            // Poses list
+            const posesContainer = document.createElement('div');
+            posesContainer.className = 'poses-container';
+
+            sessionData.poses.forEach((pose, idx) => {
+                const poseCard = document.createElement('div');
+                poseCard.className = 'pose-card';
+
+                const mins = Math.floor(pose.durationSeconds / 60);
+                const secs = pose.durationSeconds % 60;
+                const durationText = mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
+
+                poseCard.innerHTML = `
+                    <div class="pose-card-header">
+                        <div class="pose-card-header-left">
+                            <div class="pose-index">${idx + 1}</div>
+                            <div class="pose-names">
+                                <div class="pose-english">${pose.englishName}</div>
+                                <div class="pose-sanskrit">${pose.sanskritName}</div>
+                            </div>
+                        </div>
+                        <div class="pose-duration">${durationText}</div>
+                    </div>
+                    <div class="pose-card-body">
+                        <div class="pose-svg">${generatePoseSVG(pose.englishName, pose.sanskritName)}</div>
+                        <div class="pose-info">
+                            <div class="pose-benefit">${pose.bodyBenefit}</div>
+                            <div class="pose-cue-label">Alignment Cue</div>
+                            <div class="pose-cue">${pose.alignmentCue}</div>
+                            ${pose.transitionCue ? `<div class="pose-transition">→ ${pose.transitionCue}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                posesContainer.appendChild(poseCard);
+            });
+
+            container.appendChild(posesContainer);
+        }
+
+        function showErrorMessage(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-title">Oops!</div>
+                    <div class="error-message">${message}</div>
+                    <button class="error-btn" onclick="location.reload()">Try Again</button>
+                </div>
+            `;
+        }
+
+        function startTimedPractice() {
+            if (!state.sessionData) return;
+            state.currentPose = 0;
+            state.isPaused = false;
+            showScreen('timer');
+            updateTimerDisplay();
+            startPoseTimer();
+        }
+
+        function startPoseTimer() {
+            if (!state.sessionData || state.currentPose >= state.sessionData.poses.length) {
+                completeSession();
+                return;
+            }
+
+            const pose = state.sessionData.poses[state.currentPose];
+            state.timeRemaining = pose.durationSeconds;
+
+            updateTimerDisplay();
+
+            if (state.timerInterval) clearInterval(state.timerInterval);
+
+            state.timerInterval = setInterval(() => {
+                if (!state.isPaused) {
+                    state.timeRemaining--;
+                    updateTimerDisplay();
+
+                    if (state.timeRemaining <= 0) {
+                        clearInterval(state.timerInterval);
+                        nextPose();
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const pose = state.sessionData.poses[state.currentPose];
+            const mins = Math.floor(state.timeRemaining / 60);
+            const secs = state.timeRemaining % 60;
+
+            document.getElementById('timerProgress').textContent = 
+                `Pose ${state.currentPose + 1} of ${state.sessionData.poses.length}`;
+            document.getElementById('timerPoseIndex').textContent = pose.poseCategory || 'Pose';
+            document.getElementById('timerPoseEnglish').textContent = pose.englishName;
+            document.getElementById('timerPoseSanskrit').textContent = pose.sanskritName;
+            document.getElementById('timerDisplay').textContent = 
+                `${mins}:${secs.toString().padStart(2, '0')}`;
+            document.getElementById('timerBreaths').textContent = `${pose.breathCount} breaths`;
+            document.getElementById('timerCue').textContent = pose.alignmentCue;
+            
+            const svgContainer = document.getElementById('timerPoseSvg');
+            svgContainer.innerHTML = generatePoseSVG(pose.englishName, pose.sanskritName);
+
+            // Update button states
+            document.getElementById('prevBtn').disabled = state.currentPose === 0;
+        }
+
+        function nextPose() {
+            state.currentPose++;
+            if (state.currentPose >= state.sessionData.poses.length) {
+                completeSession();
+            } else {
+                startPoseTimer();
+            }
+        }
+
+        function previousPose() {
+            if (state.currentPose > 0) {
+                state.currentPose--;
+                startPoseTimer();
+            }
+        }
+
+        function completeSession() {
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            
+            document.getElementById('completionDuration').textContent = `${state.duration} minutes`;
+            document.getElementById('completionFocus').textContent = state.focus;
+            document.getElementById('completionPoseCount').textContent = 
+                `${state.sessionData.poses.length} poses`;
+
+            if (state.music !== 'none') {
+                const musicSuggestions = {
+                    'calm & meditative': 'Calming Meditation Music, Yoga Relaxation',
+                    'energizing & upbeat': 'Energizing Vinyasa Flow Music, Yoga Energy',
+                    'nature sounds': 'Nature Sounds for Yoga, Forest Ambience',
+                    'ambient/drone': 'Ambient Drone Music, Yoga Background'
+                };
+
+                const searchQuery = musicSuggestions[state.music] || 'Yoga Music';
+                document.getElementById('musicSearchQuery').textContent = searchQuery;
+                document.getElementById('musicSuggestion').style.display = 'block';
+
+                document.getElementById('spotifyBtn').addEventListener('click', () => {
+                    window.open(`https://open.spotify.com/search/${encodeURIComponent(searchQuery)}`, '_blank');
+                });
+
+                document.getElementById('youtubeBtn').addEventListener('click', () => {
+                    window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`, '_blank');
+                });
+            }
+
+            showScreen('completion');
+        }
+
+        function showScreen(screenName) {
+            Object.values(screens).forEach(screen => screen.classList.remove('active'));
+            if (screens[screenName]) {
+                screens[screenName].classList.add('active');
+            }
+        }
+
+        // SVG Generation for Poses
+        function generatePoseSVG(englishName, sanskritName) {
+            const normalizedName = englishName.toLowerCase();
+            let svg = '';
+
+            // Pose SVG generators - simple stick figures
+            if (normalizedName.includes('mountain') || normalizedName.includes('tadasana')) {
+                svg = createMountainPose();
+            } else if (normalizedName.includes('downward dog') || normalizedName.includes('adho')) {
+                svg = createDownwardDog();
+            } else if (normalizedName.includes('warrior') || normalizedName.includes('virabhadra')) {
+                svg = createWarriorPose();
+            } else if (normalizedName.includes('tree') || normalizedName.includes('vrksasana')) {
+                svg = createTreePose();
+            } else if (normalizedName.includes('child') || normalizedName.includes('balasana')) {
+                svg = createChildPose();
+            } else if (normalizedName.includes('forward fold') || normalizedName.includes('uttanasana')) {
+                svg = createForwardFold();
+            } else if (normalizedName.includes('cobra') || normalizedName.includes('bhujangasana')) {
+                svg = createCobra();
+            } else if (normalizedName.includes('lotus') || normalizedName.includes('padmasana')) {
+                svg = createLotusPose();
+            } else if (normalizedName.includes('cat') || normalizedName.includes('marjaryasana')) {
+                svg = createCatPose();
+            } else if (normalizedName.includes('cow') || normalizedName.includes('bitilasana')) {
+                svg = createCowPose();
+            } else if (normalizedName.includes('bridge') || normalizedName.includes('setu')) {
+                svg = createBridgePose();
+            } else if (normalizedName.includes('triangle') || normalizedName.includes('trikonasana')) {
+                svg = createTrianglePose();
+            } else if (normalizedName.includes('pigeon') || normalizedName.includes('eka pada')) {
+                svg = createPigeonPose();
+            } else if (normalizedName.includes('shoulder stand') || normalizedName.includes('sarvangasana')) {
+                svg = createShoulderStand();
+            } else if (normalizedName.includes('savasana') || normalizedName.includes('corpse')) {
+                svg = createSavasana();
+            } else {
+                svg = createGenericPose();
+            }
+
+            return `<svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+                ${svg}
+            </svg>`;
+        }
+
+        // Simple SVG stick figures for poses
+        function createMountainPose() {
+            return `
+                <circle cx="80" cy="30" r="8" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="38" x2="80" y2="70" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="45" x2="60" y2="60" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="45" x2="100" y2="60" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="70" x2="65" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="70" x2="95" y2="130" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createDownwardDog() {
+            return `
+                <circle cx="80" cy="40" r="6" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="46" x2="50" y2="80" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="50" y1="80" x2="50" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="46" x2="110" y2="80" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="110" y1="80" x2="110" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="46" x2="80" y2="85" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="85" x2="70" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="85" x2="90" y2="130" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createWarriorPose() {
+            return `
+                <circle cx="80" cy="25" r="7" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="32" x2="80" y2="65" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="40" x2="55" y2="55" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="40" x2="110" y2="35" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="65" x2="65" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="65" x2="100" y2="125" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createTreePose() {
+            return `
+                <circle cx="80" cy="30" r="7" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="37" x2="80" y2="75" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="45" x2="55" y2="60" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="45" x2="105" y2="60" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="75" x2="80" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <path d="M 80 65 Q 100 65 95 85" stroke="#8a8a88" stroke-width="2" fill="none"/>
+            `;
+        }
+
+        function createChildPose() {
+            return `
+                <circle cx="80" cy="50" r="6" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <path d="M 80 56 Q 80 90 80 120" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="70" y1="60" x2="50" y2="70" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="90" y1="60" x2="110" y2="70" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="60" y1="100" x2="40" y2="120" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="100" y1="100" x2="120" y2="120" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createForwardFold() {
+            return `
+                <circle cx="80" cy="35" r="6" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="41" x2="80" y2="85" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="48" x2="60" y2="65" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="48" x2="100" y2="65" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="85" x2="70" y2="140" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="85" x2="90" y2="140" stroke="#8a8a88" stroke-width="2"/>
+                <path d="M 70 65 Q 60 85 65 130" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <path d="M 90 65 Q 100 85 95 130" stroke="#8a8a88" stroke-width="2" fill="none"/>
+            `;
+        }
+
+        function createCobra() {
+            return `
+                <circle cx="80" cy="35" r="6" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <path d="M 80 41 Q 78 65 80 80" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="60" y1="50" x2="40" y2="55" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="100" y1="50" x2="120" y2="55" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="80" x2="65" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="80" x2="95" y2="130" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createLotusPose() {
+            return `
+                <circle cx="80" cy="35" r="7" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="42" x2="80" y2="70" stroke="#8a8a88" stroke-width="2"/>
+                <path d="M 70 75 Q 50 85 55 110" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <path d="M 90 75 Q 110 85 105 110" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="45" x2="60" y2="55" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="45" x2="100" y2="55" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createCatPose() {
+            return `
+                <circle cx="80" cy="50" r="5" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <path d="M 80 55 Q 75 75 85 90" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="60" y1="70" x2="40" y2="80" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="100" y1="70" x2="120" y2="80" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="75" y1="90" x2="65" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="95" y1="90" x2="95" y2="130" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createCowPose() {
+            return `
+                <circle cx="80" cy="50" r="5" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <path d="M 80 55 Q 85 75 75 90" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="60" y1="70" x2="40" y2="80" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="100" y1="70" x2="120" y2="80" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="75" y1="90" x2="65" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="85" y1="90" x2="95" y2="130" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createBridgePose() {
+            return `
+                <circle cx="80" cy="60" r="5" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="65" x2="80" y2="95" stroke="#8a8a88" stroke-width="2"/>
+                <path d="M 65 85 L 65 130 M 95 85 L 95 130" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <path d="M 60 75 Q 70 60 85 65 Q 100 60 110 75" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="60" y1="50" x2="40" y2="40" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="100" y1="50" x2="120" y2="40" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createTrianglePose() {
+            return `
+                <circle cx="80" cy="30" r="6" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="36" x2="75" y2="75" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="75" y1="75" x2="120" y2="80" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="75" y1="36" x2="120" y2="80" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="75" y1="80" x2="70" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="120" y1="80" x2="125" y2="130" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createPigeonPose() {
+            return `
+                <circle cx="80" cy="35" r="6" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="41" x2="80" y2="70" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="48" x2="55" y2="65" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="48" x2="105" y2="60" stroke="#8a8a88" stroke-width="2"/>
+                <path d="M 55 65 Q 40 90 50 130" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="70" x2="85" y2="130" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createShoulderStand() {
+            return `
+                <circle cx="80" cy="120" r="6" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="114" x2="80" y2="70" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="65" y1="100" x2="45" y2="85" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="95" y1="100" x2="115" y2="85" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="70" x2="65" y2="45" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="70" x2="95" y2="45" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createSavasana() {
+            return `
+                <circle cx="80" cy="40" r="6" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <path d="M 80 46 Q 80 70 80 110" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="45" y1="60" x2="20" y2="50" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="115" y1="60" x2="140" y2="50" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="65" y1="110" x2="50" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="95" y1="110" x2="110" y2="130" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        function createGenericPose() {
+            return `
+                <circle cx="80" cy="30" r="7" stroke="#8a8a88" stroke-width="2" fill="none"/>
+                <line x1="80" y1="37" x2="80" y2="70" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="45" x2="55" y2="60" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="45" x2="105" y2="60" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="70" x2="65" y2="130" stroke="#8a8a88" stroke-width="2"/>
+                <line x1="80" y1="70" x2="95" y2="130" stroke="#8a8a88" stroke-width="2"/>
+            `;
+        }
+
+        // PWA Support
+        if ('serviceWorker' in navigator) {
+            // Service worker registration would go here for true PWA support
+            // For MVP, the meta tags handle home screen installation
+        }
+
+        // Initialize
+        function initializeApp() {
+            console.log('🔧 Starting app initialization...');
+            try {
+                console.log('📋 DOM state:', document.readyState);
+                
+                // Check if all key elements exist
+                const requiredElements = [
+                    'durationGroup', 'focusGroup', 'musicGroup', 'generateBtn', 
+                    'settingsBtn', 'apiKeyInput', 'saveKeyBtn', 'clearKeyBtn'
+                ];
+                
+                console.log('🔍 Checking required elements...');
+                for (const id of requiredElements) {
+                    const el = document.getElementById(id);
+                    console.log(`  ${id}: ${el ? '✅ Found' : '❌ MISSING'}`);
+                }
+                
+                // Attach all event listeners
+                console.log('🎯 Attaching settings listeners...');
+                attachSettingsListeners();
+                console.log('✅ Settings listeners attached');
+                
+                console.log('🎯 Attaching intake listeners...');
+                attachIntakeListeners();
+                console.log('✅ Intake listeners attached');
+                
+                updateGenerateBtn();
+                updateApiStatus();
+                console.log('✅ App initialized successfully');
+                console.log('💡 Tip: Try clicking a button. Check console for any errors.');
+            } catch (error) {
+                console.error('❌ Initialization error:', error);
+                console.error('📍 Stack:', error.stack);
+            }
+        }
+
+        // Initialize when DOM is ready
+        console.log('📍 Script loading, DOM state:', document.readyState);
+        if (document.readyState === 'loading') {
+            console.log('⏳ DOM still loading, waiting for DOMContentLoaded...');
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('✅ DOMContentLoaded fired');
+                initializeApp();
+            });
+        } else {
+            console.log('✅ DOM already loaded, initializing now...');
+            initializeApp();
+        }
+    </script>
+</body>
+</html>

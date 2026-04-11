@@ -14,7 +14,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/yoga-generator.html"
+      "dest": "/public/index.html"
     }
   ]
 }
