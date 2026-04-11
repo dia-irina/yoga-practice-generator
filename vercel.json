@@ -2,22 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "yoga-generator.html",
-      "use": "@vercel/static"
+      "src": "api/generate.js",
+      "use": "@vercel/node",
+      "config": { "maxDuration": 60 }
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/yoga-generator.html",
-      "dest": "/yoga-generator.html"
+      "src": "/api/generate",
+      "dest": "/api/generate.js"
     },
     {
       "src": "/(.*)",

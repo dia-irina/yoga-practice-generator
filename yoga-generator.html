@@ -1435,9 +1435,11 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                 if (isLocal) {
                     // Local backend server
                     apiEndpoint = 'http://localhost:3000/api/generate';
+                    console.log('🔗 Using local API endpoint:', apiEndpoint);
                 } else {
-                    // Production: Vercel serverless function
-                    apiEndpoint = '/api/generate';
+                    // Production: Vercel serverless function - use full URL
+                    apiEndpoint = `${window.location.origin}/api/generate`;
+                    console.log('🔗 Using production API endpoint:', apiEndpoint);
                 }
 
                 const requestBody = {
@@ -1451,6 +1453,7 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     ]
                 };
 
+                console.log('📤 Sending request to:', apiEndpoint);
                 const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
