@@ -1137,7 +1137,7 @@
                     placeholder="sk-ant-..."
                 >
                 <div class="form-help">
-                    Get your API key from <a href="https://console.anthropic.com/account/keys" target="_blank">console.anthropic.com</a>. It will be stored only in your browser session.
+                    Get your API key from <a href="https://console.anthropic.com/account/keys" target="_blank">console.anthropic.com</a>. Paste the entire key as a single line. Spaces and line breaks will be automatically removed. Stored only in your browser session.
                 </div>
             </div>
 
@@ -1170,7 +1170,9 @@
 
         function setApiKey(key) {
             if (key && key.trim()) {
-                sessionStorage.setItem(API_KEY_STORAGE, key.trim());
+                // Remove ALL whitespace including newlines, spaces, tabs
+                const cleanKey = key.replace(/\s/g, '');
+                sessionStorage.setItem(API_KEY_STORAGE, cleanKey);
                 updateApiStatus();
                 return true;
             }
@@ -1242,8 +1244,16 @@
             const saveKeyBtn = document.getElementById('saveKeyBtn');
             if (saveKeyBtn) {
                 saveKeyBtn.addEventListener('click', () => {
-                    const key = document.getElementById('apiKeyInput').value;
-                    if (setApiKey(key)) {
+                    const rawKey = document.getElementById('apiKeyInput').value;
+                    // Strip ALL whitespace (spaces, tabs, newlines, etc.)
+                    const cleanKey = rawKey.replace(/\s/g, '');
+                    
+                    if (cleanKey !== rawKey) {
+                        console.log(`🧹 Cleaned API key: removed whitespace (${rawKey.length} → ${cleanKey.length} chars)`);
+                        document.getElementById('apiKeyInput').value = cleanKey;
+                    }
+                    
+                    if (setApiKey(cleanKey)) {
                         const btn = saveKeyBtn;
                         const originalText = btn.textContent;
                         btn.textContent = 'Saved ✓';
@@ -1268,6 +1278,30 @@
 
             const apiKeyInput = document.getElementById('apiKeyInput');
             if (apiKeyInput) {
+                // Handle paste events to automatically clean whitespace
+                apiKeyInput.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    const cleanText = pastedText.replace(/\s/g, '');
+                    
+                    console.log(`📋 Pasted API key: ${cleanText.length} characters (whitespace removed)`);
+                    console.log(`🔑 Key format: ${cleanText.substring(0, 15)}...${cleanText.substring(cleanText.length - 5)}`);
+                    
+                    apiKeyInput.value = cleanText;
+                    
+                    // Show visual feedback
+                    apiKeyInput.style.borderColor = '#4ade80';
+                    setTimeout(() => {
+                        apiKeyInput.style.borderColor = '';
+                    }, 1000);
+                });
+                
+                // Show character count as user types
+                apiKeyInput.addEventListener('input', () => {
+                    const keyLength = apiKeyInput.value.length;
+                    console.log(`⌨️  API Key input: ${keyLength} characters`);
+                });
+                
                 apiKeyInput.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
                         document.getElementById('saveKeyBtn').click();
