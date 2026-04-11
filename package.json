@@ -1,0 +1,21 @@
+{
+  "name": "yoga-practice-generator",
+  "version": "1.0.0",
+  "description": "AI-powered yoga practice generator web app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "yoga",
+    "fitness",
+    "ai",
+    "wellness"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": "18.x"
+  }
+}
