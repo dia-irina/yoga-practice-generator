@@ -1587,17 +1587,42 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         content = content.substring(0, jsonEndIndex);
                     }
                     
-                    // Sanitize: escape unescaped newlines and control characters inside strings
-                    // This regex finds content between quotes and replaces problematic characters
-                    content = content.replace(/"([^"\\]|\\.)*"/g, (match) => {
-                        // Replace actual newlines with \n, tabs with \t, etc.
-                        return match
-                            .replace(/[\n]/g, '\\n')
-                            .replace(/[\r]/g, '\\r')
-                            .replace(/[\t]/g, '\\t');
-                    });
+                    // Aggressively sanitize: replace all literal control characters
+                    // This handles newlines, carriage returns, tabs that are NOT properly escaped
+                    let cleaned = '';
+                    let inString = false;
+                    let escaped = false;
                     
-                    console.log('🔍 Sanitized JSON (', content.length, 'chars, braces balanced)');
+                    for (let i = 0; i < content.length; i++) {
+                        const char = content[i];
+                        const prevChar = i > 0 ? content[i-1] : '';
+                        
+                        // Track if we're inside a string
+                        if (char === '"' && !escaped) {
+                            inString = !inString;
+                            cleaned += char;
+                        } else if (inString && char === '\\' && !escaped) {
+                            // Start of escape sequence
+                            escaped = true;
+                            cleaned += char;
+                        } else if (inString && (char === '\n' || char === '\r' || char === '\t') && !escaped) {
+                            // Replace unescaped control chars with escaped versions
+                            if (char === '\n') cleaned += '\\n';
+                            else if (char === '\r') cleaned += '\\r';
+                            else if (char === '\t') cleaned += '\\t';
+                        } else {
+                            cleaned += char;
+                            escaped = false;
+                        }
+                        
+                        if (escaped && char !== '\\') {
+                            escaped = false;
+                        }
+                    }
+                    
+                    content = cleaned;
+                    
+                    console.log('🔍 Cleaned JSON (', content.length, 'chars, all control chars escaped)');
                     sessionData = JSON.parse(content);
                     console.log('✅ JSON parsed successfully, session:', sessionData.sessionTitle);
                 } catch (e) {
@@ -1606,7 +1631,7 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         ? content.substring(0, 200) + '...' + content.substring(content.length - 200)
                         : content;
                     console.error('Failed to parse content as JSON. Content preview:', preview);
-                    console.error('Parse error:', e.message);
+                    console.error('Parse error:', e.message, 'at position', e.message.match(/\d+/)?.[0]);
                     throw new Error('Failed to parse yoga sequence as JSON: ' + e.message);
                 }
 
