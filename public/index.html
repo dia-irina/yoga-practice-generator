@@ -1570,43 +1570,66 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     
                     console.log('🔍 Extracted raw content (', content.length, 'chars)');
                     
-                    // First, try as-is
+                    // Pre-process: escape literal newlines INSIDE string values
+                    let processed = '';
+                    let inString = false;
+                    let escaped = false;
+                    
+                    for (let i = 0; i < content.length; i++) {
+                        const char = content[i];
+                        
+                        // Track escape sequences
+                        if (char === '\\' && inString && !escaped) {
+                            escaped = true;
+                            processed += char;
+                            continue;
+                        }
+                        
+                        // Track when entering/exiting strings
+                        if (char === '"' && !escaped) {
+                            inString = !inString;
+                            processed += char;
+                        } else if (inString && !escaped && (char === '\n' || char === '\r')) {
+                            // Escape literal newlines/carriage returns inside strings
+                            processed += char === '\n' ? '\\n' : '\\r';
+                        } else {
+                            processed += char;
+                        }
+                        
+                        escaped = false;
+                    }
+                    
+                    content = processed;
+                    console.log('🔍 Escaped newlines in strings');
+                    
+                    // Try parsing
                     try {
                         sessionData = JSON.parse(content);
-                        console.log('✅ Parsed on first attempt');
+                        console.log('✅ Parsed successfully after escaping newlines');
                     } catch (e1) {
-                        console.warn('Parse failed, attempting recovery...');
+                        console.warn('Parse still failed, attempting recovery...');
                         
-                        // Strategy 1: Remove trailing comma + incomplete element
-                        let testContent = content.replace(/,\s*}\s*$/, '}'); // Remove trailing comma before }
+                        // Strategy 1: Remove trailing comma
+                        let testContent = content.replace(/,\s*}\s*$/, '}');
                         try {
                             sessionData = JSON.parse(testContent);
                             console.log('✅ Parsed after removing trailing comma');
-                            content = testContent;
                         } catch (e2) {
-                            // Strategy 2: Iteratively remove from end until valid
+                            // Strategy 2: Progressive truncation
                             let current = content;
                             let foundValid = false;
                             
-                            // Look for the last valid closing pattern
-                            while (current.length > 100 && !foundValid) {
-                                // Try removing last element from array
-                                let test = current.replace(/,\s*\{\s*"[^"]*"[^}]*\}\s*$/, ''); // Remove last object from array
-                                if (test !== current) {
-                                    try {
-                                        sessionData = JSON.parse(test);
-                                        console.log('✅ Parsed after removing incomplete last element');
-                                        foundValid = true;
-                                        content = test;
-                                        break;
-                                    } catch (e3) {
-                                        current = test;
-                                    }
-                                }
+                            // Try removing last array element or characters
+                            for (let attempts = 0; attempts < 50 && !foundValid && current.length > 100; attempts++) {
+                                // Remove last character
+                                current = current.slice(0, -1);
                                 
-                                // Try removing last character
-                                if (!foundValid) {
-                                    current = current.slice(0, -1);
+                                try {
+                                    sessionData = JSON.parse(current);
+                                    console.log('✅ Parsed after', attempts + 1, 'character removals');
+                                    foundValid = true;
+                                } catch (e3) {
+                                    // Continue truncating
                                 }
                             }
                             
@@ -1616,8 +1639,8 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         }
                     }
                     
-                    if (!sessionData || !sessionData.poses) {
-                        throw new Error('Parsed JSON is missing required fields (poses array)');
+                    if (!sessionData || !sessionData.poses || sessionData.poses.length === 0) {
+                        throw new Error('Parsed JSON is missing or has empty poses array');
                     }
                     
                     console.log('✅ Session loaded:', sessionData.sessionTitle, 'with', sessionData.poses.length, 'poses');
@@ -1626,9 +1649,8 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     const preview = content.length > 300 
                         ? content.substring(0, 150) + '...' + content.substring(content.length - 150)
                         : content;
-                    console.error('Failed to parse content as JSON.');
-                    console.error('Preview:', preview);
-                    console.error('Parse error:', e.message);
+                    console.error('Failed to parse JSON. Preview:', preview);
+                    console.error('Error:', e.message);
                     throw new Error('Failed to parse yoga sequence as JSON: ' + e.message);
                 }
 
