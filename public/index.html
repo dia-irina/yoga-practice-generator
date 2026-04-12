@@ -1557,10 +1557,10 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         content = jsonMatch[1];
                     }
                     
-                    // Trim whitespace and handle common issues
+                    // Trim whitespace
                     content = content.trim();
                     
-                    // If there's text before the JSON object, try to find the actual JSON
+                    // If there's text before the JSON object, find the start
                     if (!content.startsWith('{')) {
                         const jsonStart = content.indexOf('{');
                         if (jsonStart !== -1) {
@@ -1568,20 +1568,35 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         }
                     }
                     
-                    // Find the last closing brace to handle trailing text
-                    if (content.endsWith('}')) {
-                        // Good, it's clean
-                    } else {
-                        const lastBrace = content.lastIndexOf('}');
-                        if (lastBrace !== -1) {
-                            content = content.substring(0, lastBrace + 1);
+                    // Find matching closing brace by counting braces
+                    let braceCount = 0;
+                    let jsonEndIndex = -1;
+                    
+                    for (let i = 0; i < content.length; i++) {
+                        if (content[i] === '{') braceCount++;
+                        if (content[i] === '}') {
+                            braceCount--;
+                            if (braceCount === 0) {
+                                jsonEndIndex = i + 1;
+                                break;
+                            }
                         }
                     }
                     
-                    console.log('🔍 Parsing JSON content (', content.length, 'chars):', content.substring(0, 100) + '...');
+                    if (jsonEndIndex > 0) {
+                        content = content.substring(0, jsonEndIndex);
+                    }
+                    
+                    console.log('🔍 Extracting JSON (', content.length, 'chars, braces balanced)');
                     sessionData = JSON.parse(content);
+                    console.log('✅ JSON parsed successfully, session:', sessionData.sessionTitle);
                 } catch (e) {
-                    console.error('Failed to parse content as JSON. Content:', content.substring(0, 500));
+                    // Log first and last 200 chars for debugging
+                    const preview = content.length > 400 
+                        ? content.substring(0, 200) + '...' + content.substring(content.length - 200)
+                        : content;
+                    console.error('Failed to parse content as JSON. Content preview:', preview);
+                    console.error('Parse error:', e.message);
                     throw new Error('Failed to parse yoga sequence as JSON: ' + e.message);
                 }
 
