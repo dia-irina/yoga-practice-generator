@@ -1548,7 +1548,7 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                 
                 let content = data.content[0].text;
 
-                // Parse JSON response - handle markdown code blocks and whitespace
+                // Parse JSON response - handle markdown code blocks and extra text
                 let sessionData;
                 try {
                     // Try to extract JSON from markdown code blocks if present
@@ -1568,11 +1568,7 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         }
                     }
                     
-                    // Replace all unescaped literal newlines/tabs/carriage returns with escaped versions
-                    // Do this BEFORE trying to find braces to avoid issues with control chars
-                    content = content.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-                    
-                    // Find matching closing brace by counting braces (accounting for strings)
+                    // Find matching closing brace by counting braces (properly tracking strings)
                     let braceCount = 0;
                     let jsonEndIndex = -1;
                     let inString = false;
@@ -1588,7 +1584,7 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         
                         if (char === '"' && !escaped) {
                             inString = !inString;
-                        } else if (!inString) {
+                        } else if (!inString && !escaped) {
                             if (char === '{') braceCount++;
                             if (char === '}') {
                                 braceCount--;
@@ -1608,36 +1604,47 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     
                     console.log('🔍 Extracted JSON (', content.length, 'chars)');
                     
-                    // Try to parse - if it fails, try to fix common issues
+                    // Attempt to parse as-is first
                     try {
                         sessionData = JSON.parse(content);
-                    } catch (parseError) {
-                        console.warn('First parse attempt failed, trying to repair...');
+                        console.log('✅ JSON parsed successfully on first try');
+                    } catch (e1) {
+                        console.warn('Parse attempt 1 failed, trying cleanup...');
                         
-                        // Try to find and fix common issues
-                        // Fix: unclosed strings at the end (remove the broken part)
-                        const lastValidBrace = content.lastIndexOf('}');
-                        if (lastValidBrace > 0) {
-                            // Try parsing from the last brace backwards
-                            let repaired = content.substring(0, lastValidBrace + 1);
-                            try {
-                                sessionData = JSON.parse(repaired);
-                                console.log('✅ Recovered by truncating to last complete brace');
-                            } catch (e2) {
-                                throw parseError; // Original error
+                        // Try removing any literal newlines that aren't part of escape sequences
+                        let cleaned = content;
+                        
+                        // Only replace unescaped actual newlines (not the string "\n")
+                        // Split by lines and rejoin to remove real line breaks
+                        let lines = cleaned.split(/[\r\n]+/);
+                        cleaned = lines.join('');
+                        
+                        try {
+                            sessionData = JSON.parse(cleaned);
+                            console.log('✅ JSON parsed after cleanup');
+                        } catch (e2) {
+                            console.warn('Parse attempt 2 failed, trying last resort...');
+                            
+                            // Last resort: find the last complete object
+                            const lastBrace = content.lastIndexOf('}');
+                            if (lastBrace > 10) {
+                                let truncated = content.substring(0, lastBrace + 1);
+                                sessionData = JSON.parse(truncated);
+                                console.log('✅ JSON parsed from truncation');
+                            } else {
+                                throw e1; // Original error
                             }
-                        } else {
-                            throw parseError;
                         }
                     }
                     
-                    console.log('✅ JSON parsed successfully, session:', sessionData.sessionTitle);
+                    console.log('✅ Session loaded:', sessionData.sessionTitle);
                 } catch (e) {
                     // Log for debugging
-                    const preview = content.length > 400 
-                        ? content.substring(0, 200) + '...' + content.substring(content.length - 200)
+                    const preview = content.length > 300 
+                        ? content.substring(0, 150) + '...' + content.substring(content.length - 150)
                         : content;
-                    console.error('Failed to parse content as JSON. Content preview:', preview);
+                    console.error('Failed to parse content as JSON.');
+                    console.error('Preview:', preview);
                     console.error('Parse error:', e.message);
                     throw new Error('Failed to parse yoga sequence as JSON: ' + e.message);
                 }
