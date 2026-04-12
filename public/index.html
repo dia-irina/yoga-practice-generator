@@ -1568,76 +1568,59 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         }
                     }
                     
-                    // Find matching closing brace by counting braces (properly tracking strings)
-                    let braceCount = 0;
-                    let jsonEndIndex = -1;
-                    let inString = false;
-                    let escaped = false;
+                    console.log('🔍 Extracted raw content (', content.length, 'chars)');
                     
-                    for (let i = 0; i < content.length; i++) {
-                        const char = content[i];
-                        
-                        if (char === '\\' && inString && !escaped) {
-                            escaped = true;
-                            continue;
-                        }
-                        
-                        if (char === '"' && !escaped) {
-                            inString = !inString;
-                        } else if (!inString && !escaped) {
-                            if (char === '{') braceCount++;
-                            if (char === '}') {
-                                braceCount--;
-                                if (braceCount === 0) {
-                                    jsonEndIndex = i + 1;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        escaped = false;
-                    }
-                    
-                    if (jsonEndIndex > 0) {
-                        content = content.substring(0, jsonEndIndex);
-                    }
-                    
-                    console.log('🔍 Extracted JSON (', content.length, 'chars)');
-                    
-                    // Attempt to parse as-is first
+                    // First, try as-is
                     try {
                         sessionData = JSON.parse(content);
-                        console.log('✅ JSON parsed successfully on first try');
+                        console.log('✅ Parsed on first attempt');
                     } catch (e1) {
-                        console.warn('Parse attempt 1 failed, trying cleanup...');
+                        console.warn('Parse failed, attempting recovery...');
                         
-                        // Try removing any literal newlines that aren't part of escape sequences
-                        let cleaned = content;
-                        
-                        // Only replace unescaped actual newlines (not the string "\n")
-                        // Split by lines and rejoin to remove real line breaks
-                        let lines = cleaned.split(/[\r\n]+/);
-                        cleaned = lines.join('');
-                        
+                        // Strategy 1: Remove trailing comma + incomplete element
+                        let testContent = content.replace(/,\s*}\s*$/, '}'); // Remove trailing comma before }
                         try {
-                            sessionData = JSON.parse(cleaned);
-                            console.log('✅ JSON parsed after cleanup');
+                            sessionData = JSON.parse(testContent);
+                            console.log('✅ Parsed after removing trailing comma');
+                            content = testContent;
                         } catch (e2) {
-                            console.warn('Parse attempt 2 failed, trying last resort...');
+                            // Strategy 2: Iteratively remove from end until valid
+                            let current = content;
+                            let foundValid = false;
                             
-                            // Last resort: find the last complete object
-                            const lastBrace = content.lastIndexOf('}');
-                            if (lastBrace > 10) {
-                                let truncated = content.substring(0, lastBrace + 1);
-                                sessionData = JSON.parse(truncated);
-                                console.log('✅ JSON parsed from truncation');
-                            } else {
+                            // Look for the last valid closing pattern
+                            while (current.length > 100 && !foundValid) {
+                                // Try removing last element from array
+                                let test = current.replace(/,\s*\{\s*"[^"]*"[^}]*\}\s*$/, ''); // Remove last object from array
+                                if (test !== current) {
+                                    try {
+                                        sessionData = JSON.parse(test);
+                                        console.log('✅ Parsed after removing incomplete last element');
+                                        foundValid = true;
+                                        content = test;
+                                        break;
+                                    } catch (e3) {
+                                        current = test;
+                                    }
+                                }
+                                
+                                // Try removing last character
+                                if (!foundValid) {
+                                    current = current.slice(0, -1);
+                                }
+                            }
+                            
+                            if (!foundValid) {
                                 throw e1; // Original error
                             }
                         }
                     }
                     
-                    console.log('✅ Session loaded:', sessionData.sessionTitle);
+                    if (!sessionData || !sessionData.poses) {
+                        throw new Error('Parsed JSON is missing required fields (poses array)');
+                    }
+                    
+                    console.log('✅ Session loaded:', sessionData.sessionTitle, 'with', sessionData.poses.length, 'poses');
                 } catch (e) {
                     // Log for debugging
                     const preview = content.length > 300 
