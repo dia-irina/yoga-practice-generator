@@ -1587,7 +1587,17 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         content = content.substring(0, jsonEndIndex);
                     }
                     
-                    console.log('🔍 Extracting JSON (', content.length, 'chars, braces balanced)');
+                    // Sanitize: escape unescaped newlines and control characters inside strings
+                    // This regex finds content between quotes and replaces problematic characters
+                    content = content.replace(/"([^"\\]|\\.)*"/g, (match) => {
+                        // Replace actual newlines with \n, tabs with \t, etc.
+                        return match
+                            .replace(/[\n]/g, '\\n')
+                            .replace(/[\r]/g, '\\r')
+                            .replace(/[\t]/g, '\\t');
+                    });
+                    
+                    console.log('🔍 Sanitized JSON (', content.length, 'chars, braces balanced)');
                     sessionData = JSON.parse(content);
                     console.log('✅ JSON parsed successfully, session:', sessionData.sessionTitle);
                 } catch (e) {
