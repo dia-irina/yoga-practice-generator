@@ -1567,9 +1567,9 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         }
                     }
                     
-                    console.log('🔍 Extracted raw content (', content.length, 'chars)');
+                    console.log('🔍 Raw content:', content.length, 'chars');
                     
-                    // Escape ALL unescaped control characters
+                    // Escape control characters inside strings
                     let escaped = '';
                     let inString = false;
                     let isEscaped = false;
@@ -1591,12 +1591,11 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                             continue;
                         }
                         
-                        if (inString && !isEscaped) {
+                        if (inString && !isEscaped && code < 32) {
                             if (code === 10) escaped += '\\n';
                             else if (code === 13) escaped += '\\r';
                             else if (code === 9) escaped += '\\t';
-                            else if (code < 32) escaped += '\\u' + ('000' + code.toString(16)).slice(-4);
-                            else escaped += char;
+                            else escaped += '\\u' + ('000' + code.toString(16)).slice(-4);
                         } else {
                             escaped += char;
                         }
@@ -1605,84 +1604,56 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     }
                     
                     content = escaped;
-                    console.log('✅ Escaped all control characters');
+                    console.log('✅ Escaped control chars');
                     
-                    // Try parsing as-is
+                    // Try parsing first
                     try {
                         sessionData = JSON.parse(content);
-                        console.log('✅ JSON parsed successfully first try');
+                        console.log('✅ Parsed successfully');
                     } catch (e1) {
-                        console.warn('Parse failed, attempting recovery strategies...');
+                        console.warn('Parse failed, rebuilding from last complete pose...');
                         
-                        // Strategy 1: Find last complete pose object and rebuild JSON structure
-                        let lastPoseEnd = -1;
-                        let braceDepth = 0;
-                        let foundPoses = false;
+                        // Find last occurrence of `},` which marks end of a complete pose
+                        const lastCompletePos = content.lastIndexOf('},');
                         
-                        for (let i = content.length - 1; i >= 0; i--) {
-                            const char = content[i];
+                        if (lastCompletePos > 200) {
+                            // Rebuild: take everything up to the last `},` and close properly
+                            let rebuilt = content.substring(0, lastCompletePos + 2) + ']}';
                             
-                            // Skip strings (simplified)
-                            if (char === '}' && content[i-1] !== '\\') {
-                                braceDepth++;
-                                if (braceDepth === 1 && content.substring(Math.max(0, i-50), i).includes('"durationSeconds"')) {
-                                    lastPoseEnd = i + 1;
-                                    foundPoses = true;
-                                    break;
-                                }
-                            } else if (char === '{' && content[i-1] !== '\\') {
-                                braceDepth--;
-                            }
-                        }
-                        
-                        if (foundPoses && lastPoseEnd > 0) {
-                            // Find where poses array starts
-                            const posesArrayStart = content.indexOf('"poses"');
-                            if (posesArrayStart > 0) {
-                                const arrayBracket = content.indexOf('[', posesArrayStart);
-                                if (arrayBracket > 0) {
-                                    // Reconstruct: everything before the truncated pose + closing brackets
-                                    let repaired = content.substring(0, lastPoseEnd) + ']}';
+                            try {
+                                sessionData = JSON.parse(rebuilt);
+                                console.log('✅ Recovered by truncating to', lastCompletePos + 2, 'chars');
+                            } catch (e2) {
+                                console.warn('Rebuild 1 failed, trying truncation...');
+                                
+                                // Fallback: aggressive character removal
+                                let current = content;
+                                for (let i = 0; i < 500 && !sessionData; i++) {
                                     try {
-                                        sessionData = JSON.parse(repaired);
-                                        console.log('✅ Recovered by finding last complete pose');
-                                    } catch (e2) {
-                                        throw e1;
+                                        sessionData = JSON.parse(current);
+                                        console.log('✅ Parsed after removing', i, 'characters');
+                                        break;
+                                    } catch (e3) {
+                                        current = current.slice(0, -1);
                                     }
                                 }
+                                
+                                if (!sessionData) throw e1;
                             }
-                        }
-                        
-                        // Strategy 2: Aggressive character-by-character truncation
-                        if (!sessionData) {
-                            let current = content;
-                            let attempts = 0;
-                            while (current.length > 100 && attempts < 500) {
-                                try {
-                                    sessionData = JSON.parse(current);
-                                    console.log('✅ Parsed after removing', attempts, 'chars');
-                                    break;
-                                } catch (e2) {
-                                    current = current.slice(0, -1);
-                                    attempts++;
-                                }
-                            }
-                        }
-                        
-                        if (!sessionData) {
-                            throw e1; // Give up, show original error
+                        } else {
+                            throw e1;
                         }
                     }
                     
+                    // Validate loaded data
                     if (!sessionData || !sessionData.poses || sessionData.poses.length === 0) {
-                        throw new Error('Invalid JSON: missing or empty poses array');
+                        throw new Error('Loaded JSON missing poses');
                     }
                     
-                    console.log('✅ Session:', sessionData.sessionTitle, '-', sessionData.poses.length, 'poses');
+                    console.log('✅ Ready:', sessionData.sessionTitle, '|', sessionData.poses.length, 'poses');
                 } catch (e) {
-                    console.error('Parse Error:', e.message);
-                    const preview = content.substring(0, 100) + '...' + content.substring(Math.max(0, content.length - 100));
-                    console.error('Content:', preview);
+                    console.error('Failed:', e.message);
+                    console.error('Content tail:', content.substring(Math.max(0, content.length - 200)));
                     throw new Error('Failed to parse yoga sequence as JSON: ' + e.message);
                 }
 
