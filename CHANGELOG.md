@@ -1,5 +1,43 @@
 # Yoga Practice Generator - Changelog
 
+## v0.0.1 (Stable Patch) - April 13, 2026
+
+### 🐛 Critical Fixes
+- **Fixed JSON Parsing Errors** — Increased max_tokens from 2048→4096 to prevent API response truncation
+  - Root cause: Long yoga sequences were getting cut off mid-structure, breaking JSON parsing
+  - Solution: Higher token limit allows Claude to complete full JSON responses
+- **Improved Response Recovery** — Added multi-stage JSON parsing with fallback strategies
+- **Enhanced Error Messages** — Better diagnostics for parse failures
+
+### ✨ New Features
+- **Voice Guidance** — Web Speech API narrates pose names, alignment cues, and breath counts
+  - Automatic when each pose appears
+  - Optional: Can be disabled if needed
+  - Supported on Chrome, Safari, Edge (iOS/Android/desktop)
+- **Exit Button** — Red ✕ button on timer screen allows returning to practice selection
+  - Confirmation dialog prevents accidental exits
+  - Stops any ongoing voice narration
+- **Improved Pose SVGs** — More anatomically accurate 14-pose illustrations
+  - Better body positioning for each pose type
+  - Enhanced visual clarity with thicker lines and filled head circles
+  - Alignment indicators and post shading
+
+### ✅ Testing & Validation
+- ✅ Practice generation completes without errors (tested: 15, 30, 45, 60, 90 min)
+- ✅ Voice guidance works on desktop Chrome, Safari, Edge
+- ✅ Exit button returns to intake screen properly
+- ✅ Multiple consecutive generations work without issues
+- ✅ iPhone Safari fully functional
+- ✅ Mobile API key paste with whitespace cleaning
+
+### 🔄 Technical Improvements
+- Character-by-character string escaping for control characters
+- Smart JSON truncation finding last complete pose structure
+- Fallback progressive truncation (up to 500 character removals)
+- Comprehensive console logging for debugging
+
+---
+
 ## v0.0.0 (Base Stable Release) - April 11, 2026
 
 ### ✅ Features Implemented
