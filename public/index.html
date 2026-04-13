@@ -1569,7 +1569,7 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     
                     console.log('🔍 Extracted raw content (', content.length, 'chars)');
                     
-                    // Escape ALL unescaped control characters (newlines, tabs, carriage returns)
+                    // Escape ALL unescaped control characters
                     let escaped = '';
                     let inString = false;
                     let isEscaped = false;
@@ -1578,14 +1578,12 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                         const char = content[i];
                         const code = char.charCodeAt(0);
                         
-                        // Handle escape character
                         if (char === '\\' && inString) {
                             isEscaped = true;
                             escaped += char;
                             continue;
                         }
                         
-                        // Toggle string state
                         if (char === '"' && !isEscaped) {
                             inString = !inString;
                             escaped += char;
@@ -1593,19 +1591,12 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                             continue;
                         }
                         
-                        // Escape control characters inside strings
                         if (inString && !isEscaped) {
-                            if (code === 10) { // \n
-                                escaped += '\\n';
-                            } else if (code === 13) { // \r
-                                escaped += '\\r';
-                            } else if (code === 9) { // \t
-                                escaped += '\\t';
-                            } else if (code < 32) { // Other control chars
-                                escaped += '\\u' + ('000' + code.toString(16)).slice(-4);
-                            } else {
-                                escaped += char;
-                            }
+                            if (code === 10) escaped += '\\n';
+                            else if (code === 13) escaped += '\\r';
+                            else if (code === 9) escaped += '\\t';
+                            else if (code < 32) escaped += '\\u' + ('000' + code.toString(16)).slice(-4);
+                            else escaped += char;
                         } else {
                             escaped += char;
                         }
@@ -1614,45 +1605,84 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     }
                     
                     content = escaped;
-                    console.log('🔍 Escaped all control characters');
+                    console.log('✅ Escaped all control characters');
                     
-                    // Try parsing
+                    // Try parsing as-is
                     try {
                         sessionData = JSON.parse(content);
-                        console.log('✅ JSON parsed successfully');
+                        console.log('✅ JSON parsed successfully first try');
                     } catch (e1) {
-                        console.warn('Parse attempt 1 failed, trying truncation...');
+                        console.warn('Parse failed, attempting recovery strategies...');
                         
-                        // Aggressive truncation: remove characters from end until it parses
-                        let attempt = 0;
-                        let current = content;
-                        let parsed = false;
+                        // Strategy 1: Find last complete pose object and rebuild JSON structure
+                        let lastPoseEnd = -1;
+                        let braceDepth = 0;
+                        let foundPoses = false;
                         
-                        while (current.length > 50 && attempt < 500 && !parsed) {
-                            try {
-                                sessionData = JSON.parse(current);
-                                console.log('✅ Parsed after removing', attempt, 'characters');
-                                parsed = true;
-                            } catch (e2) {
-                                current = current.slice(0, -1);
-                                attempt++;
+                        for (let i = content.length - 1; i >= 0; i--) {
+                            const char = content[i];
+                            
+                            // Skip strings (simplified)
+                            if (char === '}' && content[i-1] !== '\\') {
+                                braceDepth++;
+                                if (braceDepth === 1 && content.substring(Math.max(0, i-50), i).includes('"durationSeconds"')) {
+                                    lastPoseEnd = i + 1;
+                                    foundPoses = true;
+                                    break;
+                                }
+                            } else if (char === '{' && content[i-1] !== '\\') {
+                                braceDepth--;
                             }
                         }
                         
-                        if (!parsed) {
-                            throw e1;
+                        if (foundPoses && lastPoseEnd > 0) {
+                            // Find where poses array starts
+                            const posesArrayStart = content.indexOf('"poses"');
+                            if (posesArrayStart > 0) {
+                                const arrayBracket = content.indexOf('[', posesArrayStart);
+                                if (arrayBracket > 0) {
+                                    // Reconstruct: everything before the truncated pose + closing brackets
+                                    let repaired = content.substring(0, lastPoseEnd) + ']}';
+                                    try {
+                                        sessionData = JSON.parse(repaired);
+                                        console.log('✅ Recovered by finding last complete pose');
+                                    } catch (e2) {
+                                        throw e1;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Strategy 2: Aggressive character-by-character truncation
+                        if (!sessionData) {
+                            let current = content;
+                            let attempts = 0;
+                            while (current.length > 100 && attempts < 500) {
+                                try {
+                                    sessionData = JSON.parse(current);
+                                    console.log('✅ Parsed after removing', attempts, 'chars');
+                                    break;
+                                } catch (e2) {
+                                    current = current.slice(0, -1);
+                                    attempts++;
+                                }
+                            }
+                        }
+                        
+                        if (!sessionData) {
+                            throw e1; // Give up, show original error
                         }
                     }
                     
                     if (!sessionData || !sessionData.poses || sessionData.poses.length === 0) {
-                        throw new Error('Invalid structure: missing poses array');
+                        throw new Error('Invalid JSON: missing or empty poses array');
                     }
                     
-                    console.log('✅ Session:', sessionData.sessionTitle, '(' + sessionData.poses.length + ' poses)');
+                    console.log('✅ Session:', sessionData.sessionTitle, '-', sessionData.poses.length, 'poses');
                 } catch (e) {
+                    console.error('Parse Error:', e.message);
                     const preview = content.substring(0, 100) + '...' + content.substring(Math.max(0, content.length - 100));
-                    console.error('JSON Parse Error:', e.message);
-                    console.error('Content preview:', preview);
+                    console.error('Content:', preview);
                     throw new Error('Failed to parse yoga sequence as JSON: ' + e.message);
                 }
 
