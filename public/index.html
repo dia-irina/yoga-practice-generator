@@ -1548,19 +1548,18 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                 
                 let content = data.content[0].text;
 
-                // Parse JSON response - handle markdown code blocks and extra text
+                // Parse JSON response
                 let sessionData;
                 try {
-                    // Try to extract JSON from markdown code blocks if present
+                    // Extract from markdown code blocks if present
                     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
                     if (jsonMatch) {
                         content = jsonMatch[1];
                     }
                     
-                    // Trim whitespace
                     content = content.trim();
                     
-                    // If there's text before the JSON object, find the start
+                    // Find start of JSON
                     if (!content.startsWith('{')) {
                         const jsonStart = content.indexOf('{');
                         if (jsonStart !== -1) {
@@ -1570,87 +1569,90 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                     
                     console.log('🔍 Extracted raw content (', content.length, 'chars)');
                     
-                    // Pre-process: escape literal newlines INSIDE string values
-                    let processed = '';
+                    // Escape ALL unescaped control characters (newlines, tabs, carriage returns)
+                    let escaped = '';
                     let inString = false;
-                    let escaped = false;
+                    let isEscaped = false;
                     
                     for (let i = 0; i < content.length; i++) {
                         const char = content[i];
+                        const code = char.charCodeAt(0);
                         
-                        // Track escape sequences
-                        if (char === '\\' && inString && !escaped) {
-                            escaped = true;
-                            processed += char;
+                        // Handle escape character
+                        if (char === '\\' && inString) {
+                            isEscaped = true;
+                            escaped += char;
                             continue;
                         }
                         
-                        // Track when entering/exiting strings
-                        if (char === '"' && !escaped) {
+                        // Toggle string state
+                        if (char === '"' && !isEscaped) {
                             inString = !inString;
-                            processed += char;
-                        } else if (inString && !escaped && (char === '\n' || char === '\r')) {
-                            // Escape literal newlines/carriage returns inside strings
-                            processed += char === '\n' ? '\\n' : '\\r';
-                        } else {
-                            processed += char;
+                            escaped += char;
+                            isEscaped = false;
+                            continue;
                         }
                         
-                        escaped = false;
+                        // Escape control characters inside strings
+                        if (inString && !isEscaped) {
+                            if (code === 10) { // \n
+                                escaped += '\\n';
+                            } else if (code === 13) { // \r
+                                escaped += '\\r';
+                            } else if (code === 9) { // \t
+                                escaped += '\\t';
+                            } else if (code < 32) { // Other control chars
+                                escaped += '\\u' + ('000' + code.toString(16)).slice(-4);
+                            } else {
+                                escaped += char;
+                            }
+                        } else {
+                            escaped += char;
+                        }
+                        
+                        isEscaped = false;
                     }
                     
-                    content = processed;
-                    console.log('🔍 Escaped newlines in strings');
+                    content = escaped;
+                    console.log('🔍 Escaped all control characters');
                     
                     // Try parsing
                     try {
                         sessionData = JSON.parse(content);
-                        console.log('✅ Parsed successfully after escaping newlines');
+                        console.log('✅ JSON parsed successfully');
                     } catch (e1) {
-                        console.warn('Parse still failed, attempting recovery...');
+                        console.warn('Parse attempt 1 failed, trying truncation...');
                         
-                        // Strategy 1: Remove trailing comma
-                        let testContent = content.replace(/,\s*}\s*$/, '}');
-                        try {
-                            sessionData = JSON.parse(testContent);
-                            console.log('✅ Parsed after removing trailing comma');
-                        } catch (e2) {
-                            // Strategy 2: Progressive truncation
-                            let current = content;
-                            let foundValid = false;
-                            
-                            // Try removing last array element or characters
-                            for (let attempts = 0; attempts < 50 && !foundValid && current.length > 100; attempts++) {
-                                // Remove last character
+                        // Aggressive truncation: remove characters from end until it parses
+                        let attempt = 0;
+                        let current = content;
+                        let parsed = false;
+                        
+                        while (current.length > 50 && attempt < 500 && !parsed) {
+                            try {
+                                sessionData = JSON.parse(current);
+                                console.log('✅ Parsed after removing', attempt, 'characters');
+                                parsed = true;
+                            } catch (e2) {
                                 current = current.slice(0, -1);
-                                
-                                try {
-                                    sessionData = JSON.parse(current);
-                                    console.log('✅ Parsed after', attempts + 1, 'character removals');
-                                    foundValid = true;
-                                } catch (e3) {
-                                    // Continue truncating
-                                }
+                                attempt++;
                             }
-                            
-                            if (!foundValid) {
-                                throw e1; // Original error
-                            }
+                        }
+                        
+                        if (!parsed) {
+                            throw e1;
                         }
                     }
                     
                     if (!sessionData || !sessionData.poses || sessionData.poses.length === 0) {
-                        throw new Error('Parsed JSON is missing or has empty poses array');
+                        throw new Error('Invalid structure: missing poses array');
                     }
                     
-                    console.log('✅ Session loaded:', sessionData.sessionTitle, 'with', sessionData.poses.length, 'poses');
+                    console.log('✅ Session:', sessionData.sessionTitle, '(' + sessionData.poses.length + ' poses)');
                 } catch (e) {
-                    // Log for debugging
-                    const preview = content.length > 300 
-                        ? content.substring(0, 150) + '...' + content.substring(content.length - 150)
-                        : content;
-                    console.error('Failed to parse JSON. Preview:', preview);
-                    console.error('Error:', e.message);
+                    const preview = content.substring(0, 100) + '...' + content.substring(Math.max(0, content.length - 100));
+                    console.error('JSON Parse Error:', e.message);
+                    console.error('Content preview:', preview);
                     throw new Error('Failed to parse yoga sequence as JSON: ' + e.message);
                 }
 
