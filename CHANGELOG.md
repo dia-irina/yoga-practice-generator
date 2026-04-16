@@ -1,5 +1,29 @@
 # Yoga Practice Generator - Changelog
 
+## v0.0.2 (Architecture & Model Update) - April 15, 2026
+
+### 🏗️ Architecture Changes
+- **Direct Browser API Calls** — Removed Vercel serverless proxy; app now calls Anthropic API directly from the browser
+  - API key travels only to Anthropic — no longer passes through any intermediate server
+  - Eliminates serverless function cold-start latency
+  - App works as a pure static site; simpler deployment with no Node.js builds on Vercel
+- **Simplified `vercel.json`** — Removed serverless function build config; Vercel now serves static HTML only
+
+### 🤖 Model Update
+- **Updated Claude model** — `claude-sonnet-4-20250514` → `claude-sonnet-4-6` (latest Sonnet release)
+
+### 🔧 Technical Fixes
+- **Increased `max_tokens`** — 4096 → 8192, doubles headroom for long sessions (especially 60–90 min)
+  - Reduces likelihood of truncated JSON responses on longer practices
+- **Fixed Node.js engine version** — `24.x` → `22.x` (Node 22 is Vercel's current LTS-supported version)
+- **Removed `v0.0.0.html`** — Deleted stale UTF-16 encoded snapshot; `public/index.html` is the single source of truth
+
+### 🔐 Security
+- API key now sent directly to `api.anthropic.com` via `x-api-key` header; no third-party server sees it
+- Added `anthropic-dangerous-direct-browser-access: true` header (required for browser-originated requests to Anthropic)
+
+---
+
 ## v0.0.1 (Stable Patch) - April 13, 2026
 
 ### 🐛 Critical Fixes

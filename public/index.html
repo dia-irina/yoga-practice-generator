@@ -1477,41 +1477,26 @@ Return your response as VALID JSON only (no markdown, no code blocks) with this 
 Generate a complete, varied sequence that feels authentic and anatomically sound.`;
 
             try {
-                // Auto-detect API endpoint based on environment
-                let apiEndpoint;
-                const isLocal = window.location.hostname === 'localhost' || 
-                               window.location.hostname === '127.0.0.1' ||
-                               window.location.port === '5500' ||
-                               window.location.port === '3000' ||
-                               window.location.port === '8000' ||
-                               window.location.port === '8080';
-
-                if (isLocal) {
-                    // Local backend server
-                    apiEndpoint = 'http://localhost:3000/api/generate';
-                    console.log('🔗 Using local API endpoint:', apiEndpoint);
-                } else {
-                    // Production: Vercel serverless function - use full URL
-                    apiEndpoint = `${window.location.origin}/api/generate`;
-                    console.log('🔗 Using production API endpoint:', apiEndpoint);
-                }
-
-                const requestBody = {
-                    apiKey: apiKey,
-                    system: systemPrompt,
-                    messages: [
-                        {
-                            role: 'user',
-                            content: userPrompt
-                        }
-                    ]
-                };
-
-                console.log('📤 Sending request to:', apiEndpoint);
-                const response = await fetch(apiEndpoint, {
+                console.log('📤 Sending request directly to Anthropic API');
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-6',
+                        max_tokens: 8192,
+                        system: systemPrompt,
+                        messages: [
+                            {
+                                role: 'user',
+                                content: userPrompt
+                            }
+                        ]
+                    })
                 });
 
                 if (!response.ok) {
@@ -1532,12 +1517,10 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                 // Log response for debugging
                 console.log('📊 API Response:', data);
                 
-                // Check if API returned an error
-                if (data.error) {
-                    let errorMsg = `API Error: ${data.error}`;
-                    if (data.details) errorMsg += ` (${data.details})`;
-                    if (data.keyPreview) errorMsg += ` [Key: ${data.keyPreview}, Length: ${data.keyLength}]`;
-                    throw new Error(errorMsg);
+                // Check if Anthropic returned an error in the body
+                if (data.type === 'error') {
+                    const msg = data.error?.message || JSON.stringify(data.error);
+                    throw new Error(`API Error: ${msg}`);
                 }
                 
                 // Validate response structure

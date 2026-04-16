@@ -1423,56 +1423,79 @@ Return your response as VALID JSON only (no markdown, no code blocks) with this 
 Generate a complete, varied sequence that feels authentic and anatomically sound.`;
 
             try {
-                // Auto-detect API endpoint based on environment
-                let apiEndpoint;
-                const isLocal = window.location.hostname === 'localhost' || 
-                               window.location.hostname === '127.0.0.1' ||
-                               window.location.port === '5500' ||
-                               window.location.port === '3000' ||
-                               window.location.port === '8000' ||
-                               window.location.port === '8080';
-
-                if (isLocal) {
-                    // Local backend server
-                    apiEndpoint = 'http://localhost:3000/api/generate';
-                    console.log('🔗 Using local API endpoint:', apiEndpoint);
-                } else {
-                    // Production: Vercel serverless function - use full URL
-                    apiEndpoint = `${window.location.origin}/api/generate`;
-                    console.log('🔗 Using production API endpoint:', apiEndpoint);
-                }
-
-                const requestBody = {
-                    apiKey: apiKey,
-                    system: systemPrompt,
-                    messages: [
-                        {
-                            role: 'user',
-                            content: userPrompt
-                        }
-                    ]
-                };
-
-                console.log('📤 Sending request to:', apiEndpoint);
-                const response = await fetch(apiEndpoint, {
+                console.log('📤 Sending request directly to Anthropic API');
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-6',
+                        max_tokens: 8192,
+                        system: systemPrompt,
+                        messages: [
+                            {
+                                role: 'user',
+                                content: userPrompt
+                            }
+                        ]
+                    })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                    let errorDetail = '';
+                    try {
+                        const errorData = await response.json();
+                        errorDetail = errorData.error?.message || errorData.message || response.statusText;
+                    } catch {
+                        errorDetail = response.statusText;
+                    }
+                    throw new Error(`API Error: ${response.status} - ${errorDetail}`);
                 }
 
                 const data = await response.json();
-                const content = data.content[0].text;
 
-                // Parse JSON response
+                // Check if Anthropic returned an error in the body
+                if (data.type === 'error') {
+                    const msg = data.error?.message || JSON.stringify(data.error);
+                    throw new Error(`API Error: ${msg}`);
+                }
+
+                if (!data.content || !data.content[0] || !data.content[0].text) {
+                    throw new Error('Invalid response structure from API - missing content');
+                }
+
+                let content = data.content[0].text;
+
+                // Parse JSON response with fallback recovery
                 let sessionData;
                 try {
+                    // Extract from markdown code blocks if present
+                    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+                    if (jsonMatch) content = jsonMatch[1];
+
+                    content = content.trim();
+                    if (!content.startsWith('{')) {
+                        const jsonStart = content.indexOf('{');
+                        if (jsonStart !== -1) content = content.substring(jsonStart);
+                    }
+
                     sessionData = JSON.parse(content);
                 } catch (e) {
-                    throw new Error('Failed to parse AI response as JSON');
+                    // Fallback: find last complete pose and close the JSON
+                    const lastCompletePos = content.lastIndexOf('},');
+                    if (lastCompletePos > 200) {
+                        try {
+                            sessionData = JSON.parse(content.substring(0, lastCompletePos + 2) + ']}');
+                        } catch {
+                            throw new Error('Failed to parse AI response as JSON');
+                        }
+                    } else {
+                        throw new Error('Failed to parse AI response as JSON');
+                    }
                 }
 
                 state.sessionData = sessionData;
@@ -1487,15 +1510,11 @@ Generate a complete, varied sequence that feels authentic and anatomically sound
                 let errorMsg = error.message;
                 
                 if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-                    errorMsg = `<strong>Connection Error:</strong> Unable to reach the API. 
+                    errorMsg = `<strong>Connection Error:</strong> Unable to reach the Anthropic API.
                     <br><br>
-                    <strong>If you're using the app locally:</strong>
-                    <br>1. Open a terminal in the app folder
-                    <br>2. Run: <code>node server.js</code>
-                    <br>3. Refresh this page
+                    Check your internet connection and try again.
                     <br><br>
-                    <strong>If you're using a shared link:</strong>
-                    <br>Your internet connection may be blocked. Try refreshing the page.`;
+                    If the problem persists, verify your API key is valid at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.`;
                 } else if (error.message.includes('Invalid request')) {
                     errorMsg = `<strong>Request Error:</strong> The API received an invalid request. Check your API key in Settings.`;
                 } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {

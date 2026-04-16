@@ -48,8 +48,8 @@ const server = http.createServer((req, res) => {
 
         // Make request to Anthropic API
         const apiPayload = JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 2048,
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8192,
           system: system,
           messages: messages
         });
