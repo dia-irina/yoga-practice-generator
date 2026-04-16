@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(bash -c 'git add -A && git diff --cached --quiet || \\(git commit -m \"auto: push changes\" && git push origin main\\)')",
+      "Bash(echo \"Exit: $?\")"
+    ]
+  }
+}
