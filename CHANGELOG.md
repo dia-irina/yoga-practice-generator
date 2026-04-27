@@ -1,5 +1,38 @@
 # Yoga Practice Generator - Changelog
 
+## v0.0.3 (Performance, Mobile & Deployment Fix) - April 27, 2026
+
+### ✅ Verified
+- ✅ Works on desktop web (Chrome, Safari)
+- ✅ Works on iPhone Safari (tested)
+
+### ⚡ Performance
+- **Streaming generation** — SSE streaming with live pose counter; user sees first poses within ~1 second
+- **Reduced `max_tokens`** — 8192 → 4096; shorter, focused responses generate faster
+- **Shorter system prompt** — Inline JSON schema reduced prompt from ~350 to ~120 tokens
+
+### 🎨 Redesign — Intake Screen
+- **Fits exactly one page** — No scroll on desktop or mobile; content fills the viewport
+- **Pill buttons** — `border-radius: 100px` across all option buttons
+- **CSS Grid layout** — `align-content: stretch` makes button rows proportionally fill available height
+- **Responsive columns** — Duration/music groups adapt from 3-col (mobile) to 5-col (desktop)
+- **`clamp()` sizing** — All spacing and font sizes scale smoothly across screen sizes
+
+### 📱 iPhone / Mobile Safari
+- **No auto-zoom** — `.form-input` set to `font-size: 16px`; iOS Safari auto-zooms any input < 16px
+- **No bounce scroll** — `overscroll-behavior: none`
+- **Correct height** — `-webkit-fill-available` fallback for iOS Safari address bar (pre-iOS 15.4)
+- **Text scaling** — `-webkit-text-size-adjust: 100%` prevents Safari auto font scaling on rotate
+- **Safe area insets** — `env(safe-area-inset-*)` padding keeps content clear of notch and home bar
+- **Touch feedback** — `:active` states on all buttons (`:hover` does not fire on iOS touch)
+- **Streaming fallback** — Older iOS Safari (< 14.5, no `ReadableStream`) falls back to `response.text()` parse
+
+### 🛠️ Deployment Fix
+- **Fixed Vercel 404** — `server.js` (old proxy) was being run as a Node server by Vercel, returning `{"error":"Not found"}` for all non-API routes. Fixed by switching `vercel.json` to `@vercel/static` builder
+- **Removed server entry points** from `package.json`; project is now correctly treated as a static site
+
+---
+
 ## v0.0.2 (Architecture & Model Update) - April 15, 2026
 
 ### 🏗️ Architecture Changes
