@@ -3,7 +3,10 @@
     "allow": [
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "WebFetch(domain:yoga-practice-generator.vercel.app)",
+      "Bash(gh api *)",
+      "WebFetch(domain:yoga-practice-generator-bdmw.vercel.app)"
     ]
   },
   "hooks": {
