@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Yoga Practice">
@@ -30,15 +30,24 @@
         html, body {
             width: 100%;
             height: 100%;
+            height: -webkit-fill-available;
             height: 100dvh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
             background-color: var(--primary-bg);
             color: var(--text-dark);
             line-height: 1.6;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }
 
         body {
             overflow: hidden;
+            overscroll-behavior: none;
+            /* iOS safe area support (notch, home bar) */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
         }
 
         .app-container {
@@ -175,9 +184,15 @@
             line-height: 1.2;
         }
 
-        .button-option:hover {
+        .button-option:hover,
+        .button-option:active {
             border-color: var(--accent-sage);
             background: var(--accent-tan);
+        }
+
+        .button-option.selected:active {
+            background: #95a595;
+            border-color: #95a595;
         }
 
         .button-option.selected {
@@ -202,7 +217,8 @@
             transition: background 0.15s, opacity 0.15s;
         }
 
-        .submit-btn:hover:not(:disabled) {
+        .submit-btn:hover:not(:disabled),
+        .submit-btn:active:not(:disabled) {
             background: #95a595;
         }
 
@@ -908,7 +924,7 @@
         .form-input {
             width: 100%;
             padding: 0.875rem;
-            font-size: 0.875rem;
+            font-size: 16px; /* Prevents iOS Safari auto-zoom on focus */
             border: 2px solid var(--accent-tan);
             border-radius: 8px;
             background-color: white;
@@ -1472,17 +1488,44 @@ Return VALID JSON only — no markdown:
                     throw new Error(`API Error: ${response.status} - ${errorDetail}`);
                 }
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
+                // Stream the response — update UI as poses arrive
+                // Falls back to full-response read on older iOS Safari (< 14.5) which lacks ReadableStream
                 let fullText = '';
-                let sseBuffer = '';
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    sseBuffer += decoder.decode(value, { stream: true });
-                    const lines = sseBuffer.split('\n');
-                    sseBuffer = lines.pop() ?? '';
+                if (response.body && response.body.getReader) {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let sseBuffer = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        sseBuffer += decoder.decode(value, { stream: true });
+                        const lines = sseBuffer.split('\n');
+                        sseBuffer = lines.pop() ?? '';
+                        for (const line of lines) {
+                            if (!line.startsWith('data: ')) continue;
+                            const raw = line.slice(6).trim();
+                            if (raw === '[DONE]') continue;
+                            try {
+                                const evt = JSON.parse(raw);
+                                if (evt.type === 'error') throw new Error(evt.error?.message || 'Stream error');
+                                if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+                                    fullText += evt.delta.text;
+                                    const poseCount = (fullText.match(/"englishName"/g) || []).length;
+                                    if (poseCount > 0 && loadingSubtext) {
+                                        loadingSubtext.textContent = `${poseCount} pose${poseCount !== 1 ? 's' : ''} ready…`;
+                                    }
+                                }
+                            } catch (e) {
+                                if (e.message?.includes('Stream error')) throw e;
+                            }
+                        }
+                    }
+                } else {
+                    // Fallback: read full text response (no streaming UI on older iOS)
+                    const text = await response.text();
+                    const lines = text.split('\n');
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue;
                         const raw = line.slice(6).trim();
@@ -1492,10 +1535,6 @@ Return VALID JSON only — no markdown:
                             if (evt.type === 'error') throw new Error(evt.error?.message || 'Stream error');
                             if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
                                 fullText += evt.delta.text;
-                                const poseCount = (fullText.match(/"englishName"/g) || []).length;
-                                if (poseCount > 0 && loadingSubtext) {
-                                    loadingSubtext.textContent = `${poseCount} pose${poseCount !== 1 ? 's' : ''} ready…`;
-                                }
                             }
                         } catch (e) {
                             if (e.message?.includes('Stream error')) throw e;
