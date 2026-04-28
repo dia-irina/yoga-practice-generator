@@ -1506,9 +1506,10 @@ Rules:
 5. No cold deep backbends; always counter cold intense stretches
 6. Breath count: 1 breath per 4 seconds (30s ≈ 8 breaths)
 7. All text fields under 12 words
+8. poseId MUST be one of: mountain, chair, tree, warrior_1, warrior_2, warrior_3, triangle, extended_side_angle, standing_forward_fold, half_forward_fold, low_lunge, high_lunge, plank, downward_dog, childs_pose, cat, cow, cobra, upward_dog, sphinx, locust, bow, bridge, wheel, pigeon, seated_forward_fold, boat, happy_baby, supine_twist, legs_up_wall, shoulder_stand, easy_pose, lotus, staff_pose, savasana
 
 Return VALID JSON only — no markdown:
-{"sessionTitle":"string","totalDuration":number,"intention":"string","poses":[{"englishName":"string","sanskritName":"string","durationSeconds":number,"breathCount":number,"bodyBenefit":"string","alignmentCue":"string","transitionCue":"string","poseCategory":"warm-up|standing|peak|backbend|fold|cool-down|restorative|savasana"}]}`;
+{"sessionTitle":"string","totalDuration":number,"intention":"string","poses":[{"poseId":"one_from_rule_8","englishName":"string","sanskritName":"string","durationSeconds":number,"breathCount":number,"bodyBenefit":"string","alignmentCue":"string","transitionCue":"string","poseCategory":"warm-up|standing|peak|backbend|fold|cool-down|restorative|savasana"}]}`;
 
             const userPrompt = `${state.duration}-minute yoga practice. Focus: ${state.focus}. Music mood: ${state.music}.`;
 
@@ -1801,7 +1802,7 @@ Return VALID JSON only — no markdown:
                         <div class="pose-duration">${durationText}</div>
                     </div>
                     <div class="pose-card-body">
-                        <div class="pose-svg">${generatePoseSVG(pose.englishName, pose.sanskritName)}</div>
+                        <div class="pose-svg">${generatePoseSVG(pose.poseId, pose.englishName)}</div>
                         <div class="pose-info">
                             <div class="pose-benefit">${pose.bodyBenefit}</div>
                             <div class="pose-cue-label">Alignment Cue</div>
@@ -1880,7 +1881,7 @@ Return VALID JSON only — no markdown:
             document.getElementById('timerCue').textContent = pose.alignmentCue;
             
             const svgContainer = document.getElementById('timerPoseSvg');
-            svgContainer.innerHTML = generatePoseSVG(pose.englishName, pose.sanskritName);
+            svgContainer.innerHTML = generatePoseSVG(pose.poseId, pose.englishName);
 
             // Speak pose guidance when timer starts for this pose
             if (state.timeRemaining === pose.durationSeconds) {
@@ -1979,249 +1980,189 @@ Return VALID JSON only — no markdown:
             }
         }
 
-        // SVG Generation for Poses
-        function generatePoseSVG(englishName, sanskritName) {
-            const normalizedName = englishName.toLowerCase();
-            let svg = '';
+        // ── Pose Library ─────────────────────────────────────────────────────────
+        // Each pose: h=head[cx,cy], hr=head-radius, t=torso[[top],[bot]],
+        //   la/ra=arm[[shoulder],[elbow],[wrist]], ll/rl=leg[[hip],[knee],[ankle]],
+        //   ex=extras fn for curved-spine poses, vb=viewBox
+        const POSE_LIBRARY = {
+          // STANDING / BALANCING
+          mountain:{name:'Mountain Pose',sanskrit:'Tadasana',vb:'0 0 120 150',hr:9,
+            h:[60,13],t:[[60,28],[60,70]],
+            la:[[47,32],[43,54],[41,76]],ra:[[73,32],[77,54],[79,76]],
+            ll:[[53,70],[50,103],[48,137]],rl:[[67,70],[70,103],[72,137]]},
+          chair:{name:'Chair Pose',sanskrit:'Utkatasana',vb:'0 0 120 150',hr:9,
+            h:[58,15],t:[[58,31],[54,78]],
+            la:[[45,35],[40,17],[38,4]],ra:[[71,35],[76,17],[78,4]],
+            ll:[[50,77],[40,112],[38,142]],rl:[[64,77],[78,112],[80,142]]},
+          tree:{name:'Tree Pose',sanskrit:'Vrksasana',vb:'0 0 115 150',hr:9,
+            h:[54,13],t:[[54,28],[54,70]],
+            la:[[42,32],[38,14],[36,3]],ra:[[66,32],[70,14],[72,3]],
+            ll:[[48,70],[46,103],[44,137]],rl:[[60,70],[78,97],[52,108]]},
+          warrior_1:{name:'Warrior I',sanskrit:'Virabhadrasana I',vb:'0 0 130 150',hr:9,
+            h:[65,14],t:[[65,30],[63,74]],
+            la:[[52,34],[47,16],[45,3]],ra:[[78,34],[83,16],[85,3]],
+            ll:[[57,73],[38,108],[22,140]],rl:[[69,73],[85,108],[88,140]]},
+          warrior_2:{name:'Warrior II',sanskrit:'Virabhadrasana II',vb:'0 0 210 155',hr:9,
+            h:[105,20],t:[[105,36],[105,80]],
+            la:[[93,40],[62,40],[30,40]],ra:[[117,40],[148,40],[180,40]],
+            ll:[[98,79],[76,112],[58,142]],rl:[[112,79],[136,112],[152,142]]},
+          warrior_3:{name:'Warrior III',sanskrit:'Virabhadrasana III',vb:'0 0 190 90',hr:8,
+            h:[17,40],t:[[28,40],[96,40]],
+            la:[[28,36],[8,36],[0,36]],ra:[[28,44],[8,44],[0,44]],
+            ll:[[96,37],[135,35],[168,33]],rl:[[96,43],[100,70],[100,86]]},
+          triangle:{name:'Triangle Pose',sanskrit:'Trikonasana',vb:'0 0 185 155',hr:9,
+            h:[118,16],t:[[106,30],[74,70]],
+            la:[[94,34],[68,46],[46,56]],ra:[[118,30],[122,15],[120,3]],
+            ll:[[67,68],[44,103],[24,138]],rl:[[81,68],[110,103],[128,138]]},
+          extended_side_angle:{name:'Extended Side Angle',sanskrit:'Utthita Parsvakonasana',vb:'0 0 195 158',hr:9,
+            h:[132,12],t:[[120,26],[88,68]],
+            la:[[108,30],[82,46],[58,60]],ra:[[132,24],[148,10],[152,2]],
+            ll:[[80,66],[52,100],[30,132]],rl:[[96,66],[124,100],[142,132]]},
+          standing_forward_fold:{name:'Standing Forward Fold',sanskrit:'Uttanasana',vb:'0 0 120 138',hr:9,
+            h:[60,96],t:[[60,86],[60,44]],
+            la:[[47,40],[43,62],[41,85]],ra:[[73,40],[77,62],[79,85]],
+            ll:[[53,44],[50,78],[48,110]],rl:[[67,44],[70,78],[72,110]]},
+          half_forward_fold:{name:'Half Forward Fold',sanskrit:'Ardha Uttanasana',vb:'0 0 130 118',hr:9,
+            h:[60,34],t:[[60,44],[60,18]],
+            la:[[48,20],[46,44],[46,66]],ra:[[72,20],[72,44],[72,66]],
+            ll:[[53,18],[50,54],[48,96]],rl:[[67,18],[70,54],[72,96]]},
+          low_lunge:{name:'Low Lunge',sanskrit:'Anjaneyasana',vb:'0 0 155 155',hr:9,
+            h:[78,13],t:[[78,29],[76,73]],
+            la:[[65,33],[60,14],[58,3]],ra:[[91,33],[96,14],[98,3]],
+            ll:[[70,72],[48,93],[30,82]],rl:[[82,72],[97,108],[99,140]]},
+          high_lunge:{name:'High Lunge',sanskrit:'Ashta Chandrasana',vb:'0 0 155 155',hr:9,
+            h:[78,13],t:[[78,29],[76,73]],
+            la:[[65,33],[60,14],[58,3]],ra:[[91,33],[96,14],[98,3]],
+            ll:[[70,72],[46,110],[28,142]],rl:[[82,72],[97,110],[99,142]]},
+          // FLOOR / PRONE
+          plank:{name:'Plank Pose',sanskrit:'Phalakasana',vb:'0 0 215 75',hr:8,
+            h:[25,26],t:[[33,32],[120,44]],
+            la:[[33,27],[32,48],[32,65]],ra:[[33,37],[35,54],[36,68]],
+            ll:[[120,42],[162,46],[198,50]],rl:[[120,46],[162,50],[198,54]]},
+          downward_dog:{name:'Downward Dog',sanskrit:'Adho Mukha Svanasana',vb:'0 0 215 115',hr:8,
+            h:[46,80],t:[[52,66],[106,18]],
+            la:[[48,62],[30,80],[16,103]],ra:[[56,70],[40,88],[40,106]],
+            ll:[[106,20],[150,66],[170,104]],rl:[[106,18],[144,62],[162,100]]},
+          childs_pose:{name:"Child's Pose",sanskrit:'Balasana',vb:'0 0 200 82',hr:8,
+            h:[26,66],t:[[34,62],[72,50]],
+            la:[[34,58],[74,40],[120,34]],ra:[[34,66],[74,48],[120,42]],
+            ll:[[72,52],[108,66],[140,72]],rl:[[72,52],[112,64],[144,70]]},
+          cat:{name:'Cat Pose',sanskrit:'Marjaryasana',vb:'0 0 195 88',hr:7,
+            h:[50,46],t:null,
+            la:[[65,50],[63,68],[63,83]],ra:[[65,50],[67,68],[67,83]],
+            ll:[[146,50],[146,68],[146,83]],rl:[[146,50],[150,68],[150,83]],
+            ex:(c)=>`<path d="M 66,50 Q 106,22 146,50" stroke="${c}" stroke-width="13" fill="none" stroke-linecap="round"/>`},
+          cow:{name:'Cow Pose',sanskrit:'Bitilasana',vb:'0 0 195 90',hr:7,
+            h:[50,32],t:null,
+            la:[[65,54],[63,70],[63,85]],ra:[[65,54],[67,70],[67,85]],
+            ll:[[146,54],[146,70],[146,85]],rl:[[146,54],[150,70],[150,85]],
+            ex:(c)=>`<path d="M 66,54 Q 106,70 146,54" stroke="${c}" stroke-width="13" fill="none" stroke-linecap="round"/>`},
+          cobra:{name:'Cobra Pose',sanskrit:'Bhujangasana',vb:'0 0 200 98',hr:8,
+            h:[46,20],t:[[53,32],[108,66]],
+            la:[[53,28],[36,50],[26,70]],ra:[[53,36],[70,56],[78,72]],
+            ll:[[108,68],[148,72],[186,76]],rl:[[108,70],[148,74],[188,78]]},
+          upward_dog:{name:'Upward Dog',sanskrit:'Urdhva Mukha Svanasana',vb:'0 0 200 92',hr:8,
+            h:[42,16],t:[[49,28],[106,52]],
+            la:[[49,24],[32,46],[22,66]],ra:[[49,32],[66,46],[72,62]],
+            ll:[[106,54],[148,56],[188,60]],rl:[[106,58],[148,60],[190,64]]},
+          sphinx:{name:'Sphinx Pose',sanskrit:'Salamba Bhujangasana',vb:'0 0 200 92',hr:8,
+            h:[40,20],t:[[46,30],[98,60]],
+            la:[[46,26],[50,54],[68,66]],ra:[[46,34],[62,56],[80,66]],
+            ll:[[98,62],[140,66],[180,70]],rl:[[98,64],[142,68],[182,72]]},
+          locust:{name:'Locust Pose',sanskrit:'Shalabhasana',vb:'0 0 220 75',hr:8,
+            h:[40,20],t:[[48,30],[112,44]],
+            la:[[48,26],[68,16],[98,10]],ra:[[48,34],[70,24],[100,18]],
+            ll:[[112,40],[155,30],[190,20]],rl:[[112,44],[155,34],[192,24]]},
+          bow:{name:'Bow Pose',sanskrit:'Dhanurasana',vb:'0 0 200 105',hr:8,
+            h:[55,20],t:null,
+            la:[[62,34],[96,18],[132,10]],ra:[[62,42],[98,26],[135,18]],
+            ll:[[75,60],[98,38],[132,12]],rl:[[80,62],[102,40],[136,16]],
+            ex:(c)=>`<path d="M 66,54 Q 72,65 115,62" stroke="${c}" stroke-width="13" fill="none" stroke-linecap="round"/>`},
+          bridge:{name:'Bridge Pose',sanskrit:'Setu Bandhasana',vb:'0 0 205 108',hr:7,
+            h:[178,52],t:null,
+            la:[[152,58],[130,74],[108,84]],ra:[[152,60],[132,80],[110,90]],
+            ll:[[80,40],[58,70],[48,98]],rl:[[88,40],[76,70],[72,98]],
+            ex:(c)=>`<path d="M 154,58 Q 120,24 88,40" stroke="${c}" stroke-width="13" fill="none" stroke-linecap="round"/>`},
+          wheel:{name:'Wheel Pose',sanskrit:'Urdhva Dhanurasana',vb:'0 0 195 108',hr:7,
+            h:[22,94],t:null,
+            la:[[48,84],[28,68],[14,52]],ra:[[48,92],[30,80],[18,68]],
+            ll:[[148,82],[164,66],[168,46]],rl:[[148,90],[166,76],[172,58]],
+            ex:(c)=>`<path d="M 50,84 Q 98,12 148,82" stroke="${c}" stroke-width="13" fill="none" stroke-linecap="round"/>`},
+          pigeon:{name:'Pigeon Pose',sanskrit:'Eka Pada Rajakapotasana',vb:'0 0 200 112',hr:8,
+            h:[72,20],t:[[72,34],[85,70]],
+            la:[[62,37],[46,56],[36,74]],ra:[[82,37],[96,56],[108,74]],
+            ll:[[78,68],[60,88],[44,98]],rl:[[88,70],[140,72],[174,74]]},
+          // SUPINE / SEATED
+          seated_forward_fold:{name:'Seated Forward Fold',sanskrit:'Paschimottanasana',vb:'0 0 200 82',hr:8,
+            h:[40,42],t:[[52,50],[98,56]],
+            la:[[52,46],[88,38],[148,32]],ra:[[52,54],[88,46],[148,40]],
+            ll:[[98,52],[140,56],[185,60]],rl:[[98,56],[140,60],[185,64]]},
+          boat:{name:'Boat Pose',sanskrit:'Navasana',vb:'0 0 165 118',hr:8,
+            h:[60,26],t:[[64,40],[80,62]],
+            la:[[58,43],[66,36],[90,28]],ra:[[70,43],[78,36],[102,28]],
+            ll:[[78,62],[114,48],[148,32]],rl:[[82,64],[118,50],[152,34]]},
+          happy_baby:{name:'Happy Baby',sanskrit:'Ananda Balasana',vb:'0 0 185 115',hr:8,
+            h:[92,105],t:[[92,94],[92,62]],
+            la:[[80,60],[56,38],[34,14]],ra:[[104,60],[128,38],[150,14]],
+            ll:[[86,62],[56,30],[32,12]],rl:[[98,62],[128,30],[152,12]]},
+          supine_twist:{name:'Supine Twist',sanskrit:'Supta Matsyendrasana',vb:'0 0 215 98',hr:8,
+            h:[20,48],t:[[32,48],[98,48]],
+            la:[[32,42],[32,25],[32,10]],ra:[[32,54],[60,68],[78,80]],
+            ll:[[98,44],[120,44],[164,52]],rl:[[98,52],[130,72],[120,86]]},
+          legs_up_wall:{name:'Legs Up the Wall',sanskrit:'Viparita Karani',vb:'0 0 180 115',hr:8,
+            h:[20,58],t:[[30,58],[88,58]],
+            la:[[30,52],[46,40],[62,28]],ra:[[30,64],[46,76],[62,88]],
+            ll:[[88,54],[122,34],[150,16]],rl:[[88,62],[122,44],[150,26]]},
+          shoulder_stand:{name:'Shoulder Stand',sanskrit:'Sarvangasana',vb:'0 0 120 192',hr:8,
+            h:[60,180],t:[[60,170],[60,128]],
+            la:[[50,126],[44,148],[44,168]],ra:[[70,126],[76,148],[76,168]],
+            ll:[[55,124],[53,88],[50,52]],rl:[[65,124],[67,88],[70,52]]},
+          easy_pose:{name:'Easy Pose',sanskrit:'Sukhasana',vb:'0 0 142 118',hr:9,
+            h:[71,13],t:[[71,28],[71,66]],
+            la:[[59,32],[44,52],[32,66]],ra:[[83,32],[98,52],[110,66]],
+            ll:[[64,64],[42,88],[66,96]],rl:[[78,64],[100,88],[76,96]]},
+          lotus:{name:'Lotus Pose',sanskrit:'Padmasana',vb:'0 0 142 112',hr:9,
+            h:[71,13],t:[[71,28],[71,64]],
+            la:[[59,32],[44,52],[30,64]],ra:[[83,32],[98,52],[112,64]],
+            ll:[[65,64],[38,80],[70,94]],rl:[[77,64],[104,80],[72,94]]},
+          staff_pose:{name:'Staff Pose',sanskrit:'Dandasana',vb:'0 0 205 98',hr:8,
+            h:[62,16],t:[[62,30],[62,62]],
+            la:[[50,34],[48,54],[46,72]],ra:[[74,34],[78,54],[82,72]],
+            ll:[[56,62],[110,62],[172,62]],rl:[[68,62],[120,62],[182,62]]},
+          savasana:{name:'Savasana',sanskrit:'Corpse Pose',vb:'0 0 222 76',hr:8,
+            h:[18,40],t:[[28,40],[105,40]],
+            la:[[28,35],[64,28],[98,22]],ra:[[28,45],[64,52],[98,58]],
+            ll:[[105,37],[152,35],[194,33]],rl:[[105,43],[152,45],[194,48]]}
+        };
 
-            // Pose SVG generators - simple stick figures
-            if (normalizedName.includes('mountain') || normalizedName.includes('tadasana')) {
-                svg = createMountainPose();
-            } else if (normalizedName.includes('downward dog') || normalizedName.includes('adho')) {
-                svg = createDownwardDog();
-            } else if (normalizedName.includes('warrior') || normalizedName.includes('virabhadra')) {
-                svg = createWarriorPose();
-            } else if (normalizedName.includes('tree') || normalizedName.includes('vrksasana')) {
-                svg = createTreePose();
-            } else if (normalizedName.includes('child') || normalizedName.includes('balasana')) {
-                svg = createChildPose();
-            } else if (normalizedName.includes('forward fold') || normalizedName.includes('uttanasana')) {
-                svg = createForwardFold();
-            } else if (normalizedName.includes('cobra') || normalizedName.includes('bhujangasana')) {
-                svg = createCobra();
-            } else if (normalizedName.includes('lotus') || normalizedName.includes('padmasana')) {
-                svg = createLotusPose();
-            } else if (normalizedName.includes('cat') || normalizedName.includes('marjaryasana')) {
-                svg = createCatPose();
-            } else if (normalizedName.includes('cow') || normalizedName.includes('bitilasana')) {
-                svg = createCowPose();
-            } else if (normalizedName.includes('bridge') || normalizedName.includes('setu')) {
-                svg = createBridgePose();
-            } else if (normalizedName.includes('triangle') || normalizedName.includes('trikonasana')) {
-                svg = createTrianglePose();
-            } else if (normalizedName.includes('pigeon') || normalizedName.includes('eka pada')) {
-                svg = createPigeonPose();
-            } else if (normalizedName.includes('shoulder stand') || normalizedName.includes('sarvangasana')) {
-                svg = createShoulderStand();
-            } else if (normalizedName.includes('savasana') || normalizedName.includes('corpse')) {
-                svg = createSavasana();
-            } else {
-                svg = createGenericPose();
+        // Render a pose as a thick-stroke human manikin SVG
+        function renderManikin(pose) {
+            const c = '#a8b8a8';
+            const ln = (a, b, w) =>
+                `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+            let s = `<circle cx="${pose.h[0]}" cy="${pose.h[1]}" r="${pose.hr||9}" fill="${c}"/>`;
+            if (pose.t)  s += ln(pose.t[0], pose.t[1], 13);
+            if (pose.ex) s += pose.ex(c);
+            if (pose.la) { s += ln(pose.la[0],pose.la[1],8); s += ln(pose.la[1],pose.la[2],7); }
+            if (pose.ra) { s += ln(pose.ra[0],pose.ra[1],8); s += ln(pose.ra[1],pose.ra[2],7); }
+            if (pose.ll) { s += ln(pose.ll[0],pose.ll[1],10); s += ln(pose.ll[1],pose.ll[2],9); }
+            if (pose.rl) { s += ln(pose.rl[0],pose.rl[1],10); s += ln(pose.rl[1],pose.rl[2],9); }
+            return `<svg viewBox="${pose.vb}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">${s}</svg>`;
+        }
+
+        // Look up pose by poseId, fall back to English name fuzzy match
+        function generatePoseSVG(poseId, englishName) {
+            let pose = POSE_LIBRARY[poseId];
+            if (!pose && englishName) {
+                const n = englishName.toLowerCase();
+                for (const [id, p] of Object.entries(POSE_LIBRARY)) {
+                    const words = p.name.toLowerCase().split(' ');
+                    if (n.includes(id.replace(/_/g,' ')) || words.some(w => w.length > 4 && n.includes(w))) {
+                        pose = p; break;
+                    }
+                }
             }
-
-            return `<svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
-                ${svg}
-            </svg>`;
-        }
-
-        // Simple SVG stick figures for poses - IMPROVED VERSIONS
-        function createMountainPose() {
-            return `
-                <circle cx="80" cy="25" r="8" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <line x1="80" y1="33" x2="80" y2="65" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="40" x2="60" y2="55" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="80" y1="40" x2="100" y2="55" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="80" y1="65" x2="70" y2="135" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="65" x2="90" y2="135" stroke="#8a8a88" stroke-width="2.5"/>
-                <rect x="68" y="135" width="24" height="3" fill="#8a8a88" opacity="0.5"/>
-            `;
-        }
-
-        function createDownwardDog() {
-            return `
-                <circle cx="80" cy="30" r="7" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <path d="M 80 37 L 50 70 L 50 135" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <path d="M 80 37 L 110 70 L 110 135" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <path d="M 80 37 L 80 100" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <line x1="75" y1="100" x2="65" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="85" y1="100" x2="95" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <rect x="45" y="135" width="70" height="2" fill="#8a8a88" opacity="0.4"/>
-            `;
-        }
-
-        function createWarriorPose() {
-            return `
-                <circle cx="80" cy="20" r="8" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <line x1="80" y1="28" x2="80" y2="60" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="35" x2="50" y2="48" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="35" x2="115" y2="38" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="60" x2="60" y2="135" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="60" x2="105" y2="120" stroke="#8a8a88" stroke-width="2.5"/>
-                <polygon points="60,135 54,135 70,140" fill="#8a8a88" opacity="0.4"/>
-                <polygon points="105,120 100,120 110,125" fill="#8a8a88" opacity="0.4"/>
-            `;
-        }
-
-        function createTreePose() {
-            return `
-                <circle cx="80" cy="25" r="8" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <line x1="80" y1="33" x2="80" y2="70" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="40" x2="50" y2="50" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="80" y1="40" x2="110" y2="50" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="80" y1="70" x2="80" y2="135" stroke="#8a8a88" stroke-width="2.5"/>
-                <path d="M 100 60 Q 115 65 110 85 Q 112 95 105 100" stroke="#8a8a88" stroke-width="2" fill="none"/>
-                <circle cx="110" cy="80" r="6" stroke="#8a8a88" stroke-width="2" fill="none"/>
-                <rect x="74" y="135" width="12" height="2" fill="#8a8a88" opacity="0.5"/>
-            `;
-        }
-
-        function createChildPose() {
-            return `
-                <circle cx="80" cy="50" r="6" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <path d="M 80 56 Q 75 85 75 125" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <path d="M 70 58 Q 55 75 50 130" stroke="#8a8a88" stroke-width="2" fill="none"/>
-                <path d="M 90 58 Q 105 75 110 130" stroke="#8a8a88" stroke-width="2" fill="none"/>
-                <rect x="70" y="125" width="40" height="4" fill="#8a8a88" opacity="0.3"/>
-                <ellipse cx="75" cy="90" rx="15" ry="20" fill="none" stroke="#8a8a88" stroke-width="1.5" opacity="0.4"/>
-            `;
-        }
-
-        function createForwardFold() {
-            return `
-                <circle cx="80" cy="30" r="7" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <path d="M 80 37 Q 80 75 80 130" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <path d="M 70 42 Q 60 65 65 130" stroke="#8a8a88" stroke-width="2" fill="none"/>
-                <path d="M 90 42 Q 100 65 95 130" stroke="#8a8a88" stroke-width="2" fill="none"/>
-                <line x1="65" y1="45" x2="45" y2="55" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="95" y1="45" x2="115" y2="55" stroke="#8a8a88" stroke-width="2"/>
-                <rect x="60" y="130" width="40" height="3" fill="#8a8a88" opacity="0.4"/>
-            `;
-        }
-
-        function createCobra() {
-            return `
-                <circle cx="80" cy="30" r="7" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <path d="M 80 37 Q 82 50 85 70 Q 88 85 85 100" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <path d="M 70 40 L 45 50" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 90 40 L 115 50" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="85" y1="100" x2="70" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="85" y1="100" x2="100" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 75 70 Q 65 75 60 80" stroke="#8a8a88" stroke-width="1.5" fill="none" opacity="0.6"/>
-                <path d="M 95 70 Q 105 75 110 80" stroke="#8a8a88" stroke-width="1.5" fill="none" opacity="0.6"/>
-            `;
-        }
-
-        function createLotusPose() {
-            return `
-                <circle cx="80" cy="30" r="8" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <line x1="80" y1="38" x2="80" y2="65" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="42" x2="55" y2="52" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="80" y1="42" x2="105" y2="52" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 50 70 Q 40 85 45 115" stroke="#8a8a88" stroke-width="2" fill="none"/>
-                <path d="M 110 70 Q 120 85 115 115" stroke="#8a8a88" stroke-width="2" fill="none"/>
-                <path d="M 60 75 Q 45 80 50 100" stroke="#8a8a88" stroke-width="1.5" fill="none" opacity="0.5"/>
-                <path d="M 100 75 Q 115 80 110 100" stroke="#8a8a88" stroke-width="1.5" fill="none" opacity="0.5"/>
-                <line x1="80" y1="65" x2="80" y2="90" stroke="#8a8a88" stroke-width="1.5" opacity="0.4"/>
-            `;
-        }
-
-        function createCatPose() {
-            return `
-                <circle cx="80" cy="45" r="6" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <path d="M 80 51 Q 75 70 85 95" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <path d="M 65 60 L 40 75" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 95 60 L 120 75" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="75" y1="95" x2="65" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="95" y1="95" x2="95" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 70 50 Q 75 47 78 52" stroke="#8a8a88" stroke-width="1.5" fill="none"/>
-                <path d="M 90 50 Q 85 47 82 52" stroke="#8a8a88" stroke-width="1.5" fill="none"/>
-            `;
-        }
-
-        function createCowPose() {
-            return `
-                <circle cx="80" cy="45" r="6" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <path d="M 80 51 Q 85 70 75 95" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <path d="M 65 60 L 40 75" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 95 60 L 120 75" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="75" y1="95" x2="65" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="85" y1="95" x2="95" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 78 48 L 82 42" stroke="#8a8a88" stroke-width="1.5" opacity="0.6"/>
-                <path d="M 82 48 L 78 42" stroke="#8a8a88" stroke-width="1.5" opacity="0.6"/>
-            `;
-        }
-
-        function createBridgePose() {
-            return `
-                <circle cx="80" cy="55" r="6" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <line x1="80" y1="61" x2="80" y2="90" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 60 75 Q 70 50 85 60 Q 100 50 110 75" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <line x1="60" y1="75" x2="55" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="110" y1="75" x2="115" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="60" y1="43" x2="40" y2="35" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="100" y1="43" x2="120" y2="35" stroke="#8a8a88" stroke-width="2"/>
-                <rect x="55" y="135" width="70" height="3" fill="#8a8a88" opacity="0.4"/>
-            `;
-        }
-
-        function createTrianglePose() {
-            return `
-                <circle cx="80" cy="25" r="7" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <line x1="80" y1="32" x2="70" y2="75" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="70" y1="75" x2="125" y2="85" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="70" y1="32" x2="125" y2="85" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="70" y1="75" x2="65" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="125" y1="85" x2="130" y2="135" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="80" y1="40" x2="100" y2="45" stroke="#8a8a88" stroke-width="1.5" opacity="0.5"/>
-            `;
-        }
-
-        function createPigeonPose() {
-            return `
-                <circle cx="80" cy="30" r="7" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <line x1="80" y1="37" x2="80" y2="65" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="42" x2="50" y2="55" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="80" y1="42" x2="110" y2="58" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 50 65 Q 35 90 48 130" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <path d="M 110 65 Q 115 90 110 130" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <line x1="80" y1="65" x2="75" y2="135" stroke="#8a8a88" stroke-width="1.5" opacity="0.4"/>
-            `;
-        }
-
-        function createShoulderStand() {
-            return `
-                <circle cx="80" cy="115" r="7" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <line x1="80" y1="108" x2="80" y2="65" stroke="#8a8a88" stroke-width="2.5"/>
-                <path d="M 60 95 L 45 75" stroke="#8a8a88" stroke-width="2.5"/>
-                <path d="M 100 95 L 115 75" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="65" x2="65" y2="40" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="65" x2="95" y2="40" stroke="#8a8a88" stroke-width="2.5"/>
-                <ellipse cx="80" cy="50" rx="8" ry="15" fill="none" stroke="#8a8a88" stroke-width="1.5" opacity="0.5"/>
-            `;
-        }
-
-        function createSavasana() {
-            return `
-                <circle cx="80" cy="40" r="7" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <path d="M 80 47 Q 85 70 90 110" stroke="#8a8a88" stroke-width="2.5" fill="none"/>
-                <line x1="40" y1="58" x2="15" y2="48" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="120" y1="58" x2="145" y2="48" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 70 110 Q 55 120 50 135" stroke="#8a8a88" stroke-width="2"/>
-                <path d="M 110 110 Q 125 120 130 135" stroke="#8a8a88" stroke-width="2"/>
-                <ellipse cx="80" cy="95" rx="35" ry="8" fill="none" stroke="#8a8a88" stroke-width="1" opacity="0.4" stroke-dasharray="2,2"/>
-            `;
-        }
-
-        function createGenericPose() {
-            return `
-                <circle cx="80" cy="30" r="7" stroke="#8a8a88" stroke-width="2" fill="#f0e6d2" opacity="0.7"/>
-                <line x1="80" y1="37" x2="80" y2="70" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="45" x2="55" y2="60" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="80" y1="45" x2="105" y2="60" stroke="#8a8a88" stroke-width="2"/>
-                <line x1="80" y1="70" x2="65" y2="135" stroke="#8a8a88" stroke-width="2.5"/>
-                <line x1="80" y1="70" x2="95" y2="135" stroke="#8a8a88" stroke-width="2.5"/>
-                <rect x="60" y="135" width="40" height="2" fill="#8a8a88" opacity="0.4"/>
-            `;
+            return renderManikin(pose || POSE_LIBRARY.mountain);
         }
 
         // PWA Support
